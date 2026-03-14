@@ -9,16 +9,24 @@ from race_solver.analysis import (
     extract_winner_patterns,
     laps_bucket,
     pit_burden_bucket,
+    summarize_historical_residuals,
     summarize_start_band_usage,
     summarize_winner_patterns,
     temp_bucket,
 )
-from race_solver.historical_data import load_historical_races
+from race_solver.historical_data import load_historical_races, split_races
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--max-races", type=int, default=0)
+    parser.add_argument(
+        "--split",
+        choices=("all", "train", "validation"),
+        default="validation",
+    )
+    parser.add_argument("--top", type=int, default=10)
+    parser.add_argument("--min-samples", type=int, default=50)
     return parser.parse_args()
 
 
@@ -34,10 +42,38 @@ def print_bucket_summary(title: str, summaries: dict[str, object]) -> None:
         print(f"    top_sequences={summary.top_sequences}")
 
 
+def print_residual_group_summary(title: str, summaries: list[object]) -> None:
+    print(title)
+    for summary in summaries:
+        print(
+            f"  {summary.key}: samples={summary.sample_count}  "
+            f"avg_rank_error={summary.average_rank_error:+.3f}  "
+            f"avg_abs_rank_error={summary.average_absolute_rank_error:.3f}"
+        )
+        print(f"    top_signatures={summary.top_signatures}")
+
+
+def select_race_split(args: argparse.Namespace) -> tuple[str, list[object]]:
+    all_races = load_historical_races(max_races=args.max_races)
+    training_races, validation_races = split_races(all_races)
+    if args.split == "train":
+        return "train", training_races
+    if args.split == "validation":
+        return "validation", validation_races
+    return "all", all_races
+
+
 def main() -> None:
     args = parse_args()
-    races = load_historical_races(max_races=args.max_races)
+    split_label, races = select_race_split(args)
     winner_patterns = extract_winner_patterns(races)
+    residual_summary = summarize_historical_residuals(
+        races,
+        top=args.top,
+        min_samples=args.min_samples,
+    )
+
+    print(f"split={split_label} races={len(races)}")
 
     print("start_band_usage")
     for band, summary in summarize_start_band_usage(races).items():
@@ -70,6 +106,30 @@ def main() -> None:
             value_fn=lambda pattern: pattern.pit_burden,
         ),
     )
+    print_residual_group_summary(
+        "overrated_strategy_families",
+        residual_summary.family_overrated,
+    )
+    print_residual_group_summary(
+        "underrated_strategy_families",
+        residual_summary.family_underrated,
+    )
+    print_residual_group_summary(
+        "overrated_strategy_families_by_context",
+        residual_summary.family_context_overrated,
+    )
+    print_residual_group_summary(
+        "underrated_strategy_families_by_context",
+        residual_summary.family_context_underrated,
+    )
+    print("top_pairwise_confusions")
+    for summary in residual_summary.pairwise_confusions:
+        print(
+            f"  {summary.mismatch_count:04d}x  "
+            f"predicted_ahead={summary.predicted_ahead_family}  "
+            f"actual_ahead={summary.actual_ahead_family}  "
+            f"context={summary.context_bucket}"
+        )
 
 
 if __name__ == "__main__":

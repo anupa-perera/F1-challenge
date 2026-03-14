@@ -13,7 +13,8 @@ The solver is organized so each file answers one question:
 - `analyze_suite.py`
   Aggregates failure patterns across a labeled suite so we can self-analyze model behavior.
 - `analyze_historical_patterns.py`
-  Summarizes historically observed strategy patterns so modeling ideas stay tied to the data.
+  Summarizes historically observed strategy patterns and residual biases by
+  strategy family/context so modeling ideas stay tied to the data.
 - `race_solver/models.py`
   Defines the immutable data structures shared everywhere else.
 - `race_solver/parsing.py`
@@ -63,3 +64,4 @@ The solver is organized so each file answers one question:
 6. Compare a prediction with `python solution/analyze_case.py --input ... --expected ...`.
 7. Analyze a whole suite with `python solution/analyze_suite.py`.
 8. Mine historical strategy patterns with `python solution/analyze_historical_patterns.py`.
+   Use `--split validation` to inspect held-out residuals before changing the model.

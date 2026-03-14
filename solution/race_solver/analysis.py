@@ -14,6 +14,7 @@ import json
 
 from .historical_data import HistoricalRace
 from .models import DriverPlan
+from .parameters import DEFAULT_MODEL_PARAMETERS
 from .parsing import parse_race_input
 from .reporting import first_divergence
 from .scoring import predict_finishing_order
@@ -67,6 +68,43 @@ class BucketSummary:
     start_tire_distribution: dict[str, float]
     average_first_stint_fraction: float
     top_sequences: list[tuple[str, int]]
+
+
+@dataclass(frozen=True)
+class DriverResidual:
+    strategy_family: str
+    strategy_signature: str
+    context_bucket: str
+    actual_rank: int
+    predicted_rank: int
+    rank_error: int
+    absolute_rank_error: int
+
+
+@dataclass(frozen=True)
+class ResidualGroupSummary:
+    key: str
+    sample_count: int
+    average_rank_error: float
+    average_absolute_rank_error: float
+    top_signatures: list[tuple[str, int]]
+
+
+@dataclass(frozen=True)
+class PairwiseConfusionSummary:
+    predicted_ahead_family: str
+    actual_ahead_family: str
+    context_bucket: str
+    mismatch_count: int
+
+
+@dataclass(frozen=True)
+class HistoricalResidualSummary:
+    family_overrated: list[ResidualGroupSummary]
+    family_underrated: list[ResidualGroupSummary]
+    family_context_overrated: list[ResidualGroupSummary]
+    family_context_underrated: list[ResidualGroupSummary]
+    pairwise_confusions: list[PairwiseConfusionSummary]
 
 
 def temp_bucket(track_temp: int) -> str:
@@ -209,6 +247,21 @@ def strategy_signature(driver_plan: DriverPlan) -> str:
     )
 
 
+def strategy_family(driver_plan: DriverPlan) -> str:
+    sequence = "->".join(stint.compound for stint in driver_plan.stints)
+    stop_label = "stop" if driver_plan.stop_count == 1 else "stops"
+    return f"{sequence} / {driver_plan.stop_count} {stop_label}"
+
+
+def historical_context_bucket(race: HistoricalRace) -> str:
+    pit_burden = race.config.pit_lane_time / race.config.base_lap_time
+    return (
+        f"{laps_bucket(race.config.total_laps)}|"
+        f"{temp_bucket(race.config.track_temp)}|"
+        f"{pit_burden_bucket(pit_burden)}"
+    )
+
+
 def compare_case_payload(
     case_name: str,
     payload: dict,
@@ -344,3 +397,191 @@ def compare_historical_races(
             )
         )
     return comparisons, summarize_case_comparisons(comparisons)
+
+
+def extract_driver_residuals(
+    races: list[HistoricalRace],
+) -> list[DriverResidual]:
+    residuals: list[DriverResidual] = []
+    for race in races:
+        predicted_order = predict_finishing_order(
+            config=race.config,
+            driver_plans=race.driver_plans,
+            model=DEFAULT_MODEL_PARAMETERS,
+        )
+        predicted_rank = {
+            driver_id: index + 1
+            for index, driver_id in enumerate(predicted_order)
+        }
+        actual_rank = {
+            driver_id: index + 1
+            for index, driver_id in enumerate(race.actual_order)
+        }
+        plan_by_driver = {
+            driver_plan.driver_id: driver_plan for driver_plan in race.driver_plans
+        }
+        context_bucket = historical_context_bucket(race)
+
+        for driver_id, plan in plan_by_driver.items():
+            rank_error = predicted_rank[driver_id] - actual_rank[driver_id]
+            residuals.append(
+                DriverResidual(
+                    strategy_family=strategy_family(plan),
+                    strategy_signature=strategy_signature(plan),
+                    context_bucket=context_bucket,
+                    actual_rank=actual_rank[driver_id],
+                    predicted_rank=predicted_rank[driver_id],
+                    rank_error=rank_error,
+                    absolute_rank_error=abs(rank_error),
+                )
+            )
+
+    return residuals
+
+
+def summarize_residual_groups(
+    residuals: list[DriverResidual],
+    key_fn,
+    min_samples: int,
+) -> list[ResidualGroupSummary]:
+    grouped_errors: dict[str, list[int]] = defaultdict(list)
+    grouped_abs_errors: dict[str, list[int]] = defaultdict(list)
+    grouped_signatures: dict[str, Counter] = defaultdict(Counter)
+
+    for residual in residuals:
+        key = key_fn(residual)
+        grouped_errors[key].append(residual.rank_error)
+        grouped_abs_errors[key].append(residual.absolute_rank_error)
+        grouped_signatures[key][residual.strategy_signature] += 1
+
+    summaries = []
+    for key, rank_errors in grouped_errors.items():
+        sample_count = len(rank_errors)
+        if sample_count < min_samples:
+            continue
+        summaries.append(
+            ResidualGroupSummary(
+                key=key,
+                sample_count=sample_count,
+                average_rank_error=sum(rank_errors) / sample_count,
+                average_absolute_rank_error=(
+                    sum(grouped_abs_errors[key]) / sample_count
+                ),
+                top_signatures=grouped_signatures[key].most_common(3),
+            )
+        )
+
+    return summaries
+
+
+def summarize_pairwise_confusions(
+    races: list[HistoricalRace],
+    top: int,
+) -> list[PairwiseConfusionSummary]:
+    confusion_counts: Counter = Counter()
+
+    for race in races:
+        predicted_order = predict_finishing_order(
+            config=race.config,
+            driver_plans=race.driver_plans,
+            model=DEFAULT_MODEL_PARAMETERS,
+        )
+        predicted_rank = {
+            driver_id: index
+            for index, driver_id in enumerate(predicted_order)
+        }
+        plan_by_driver = {
+            driver_plan.driver_id: driver_plan for driver_plan in race.driver_plans
+        }
+        context_bucket = historical_context_bucket(race)
+
+        for index, actual_ahead in enumerate(race.actual_order):
+            for actual_behind in race.actual_order[index + 1 :]:
+                if predicted_rank[actual_ahead] < predicted_rank[actual_behind]:
+                    continue
+                confusion_counts[
+                    (
+                        strategy_family(plan_by_driver[actual_behind]),
+                        strategy_family(plan_by_driver[actual_ahead]),
+                        context_bucket,
+                    )
+                ] += 1
+
+    return [
+        PairwiseConfusionSummary(
+            predicted_ahead_family=predicted_ahead,
+            actual_ahead_family=actual_ahead,
+            context_bucket=context_bucket,
+            mismatch_count=count,
+        )
+        for (predicted_ahead, actual_ahead, context_bucket), count in confusion_counts.most_common(top)
+    ]
+
+
+def summarize_historical_residuals(
+    races: list[HistoricalRace],
+    top: int = 10,
+    min_samples: int = 50,
+) -> HistoricalResidualSummary:
+    residuals = extract_driver_residuals(races)
+    family_summaries = summarize_residual_groups(
+        residuals,
+        key_fn=lambda residual: residual.strategy_family,
+        min_samples=min_samples,
+    )
+    family_context_summaries = summarize_residual_groups(
+        residuals,
+        key_fn=lambda residual: (
+            f"{residual.context_bucket}|{residual.strategy_family}"
+        ),
+        min_samples=min_samples,
+    )
+
+    family_overrated = sorted(
+        [summary for summary in family_summaries if summary.average_rank_error < 0],
+        key=lambda summary: (
+            summary.average_rank_error,
+            -summary.average_absolute_rank_error,
+            -summary.sample_count,
+        ),
+    )[:top]
+    family_underrated = sorted(
+        [summary for summary in family_summaries if summary.average_rank_error > 0],
+        key=lambda summary: (
+            -summary.average_rank_error,
+            -summary.average_absolute_rank_error,
+            -summary.sample_count,
+        ),
+    )[:top]
+    family_context_overrated = sorted(
+        [
+            summary
+            for summary in family_context_summaries
+            if summary.average_rank_error < 0
+        ],
+        key=lambda summary: (
+            summary.average_rank_error,
+            -summary.average_absolute_rank_error,
+            -summary.sample_count,
+        ),
+    )[:top]
+    family_context_underrated = sorted(
+        [
+            summary
+            for summary in family_context_summaries
+            if summary.average_rank_error > 0
+        ],
+        key=lambda summary: (
+            -summary.average_rank_error,
+            -summary.average_absolute_rank_error,
+            -summary.sample_count,
+        ),
+    )[:top]
+
+    return HistoricalResidualSummary(
+        family_overrated=family_overrated,
+        family_underrated=family_underrated,
+        family_context_overrated=family_context_overrated,
+        family_context_underrated=family_context_underrated,
+        pairwise_confusions=summarize_pairwise_confusions(races, top=top),
+    )
