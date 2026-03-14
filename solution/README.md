@@ -50,6 +50,11 @@ The solver is organized so each file answers one question:
 
 1. Update the scoring model in `race_solver/scoring.py` or parameters in `race_solver/parameters.py`.
 2. Refit with `python solution/calibrate_model.py`.
+   Quick iteration path:
+   `--profile smoke` for correctness and wiring checks,
+   `--profile fast` for trying ideas cheaply,
+   `--profile medium` before spending a full run,
+   and `--profile full` as the only commit-worthy gate.
 3. Freeze the best parameters back into `race_solver/parameters.py`.
 4. Run the solver with `python solution/race_simulator.py < input.json`.
 5. Explain a race with `python solution/explain_race.py < input.json`.

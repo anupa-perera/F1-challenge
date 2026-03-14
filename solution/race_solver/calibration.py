@@ -100,13 +100,75 @@ class SearchResult:
     checkpoints: tuple[ModelParameters, ...]
 
 
+@dataclass(frozen=True)
+class CalibrationProfile:
+    max_races: int
+    sample_size: int
+    coarse_passes: int
+    refine_passes: int
+
+
+PROFILE_DEFAULTS = {
+    "smoke": CalibrationProfile(
+        max_races=1000,
+        sample_size=250,
+        coarse_passes=1,
+        refine_passes=1,
+    ),
+    "fast": CalibrationProfile(
+        max_races=5000,
+        sample_size=800,
+        coarse_passes=2,
+        refine_passes=2,
+    ),
+    "medium": CalibrationProfile(
+        max_races=12000,
+        sample_size=1000,
+        coarse_passes=2,
+        refine_passes=3,
+    ),
+    "full": CalibrationProfile(
+        max_races=0,
+        sample_size=1200,
+        coarse_passes=2,
+        refine_passes=3,
+    ),
+}
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--sample-size", type=int, default=1200)
-    parser.add_argument("--coarse-passes", type=int, default=2)
-    parser.add_argument("--refine-passes", type=int, default=3)
-    parser.add_argument("--max-races", type=int, default=0)
+    parser.add_argument(
+        "--profile",
+        choices=tuple(PROFILE_DEFAULTS),
+        default="full",
+        help="Deterministic search budget profile used for staged experimentation.",
+    )
+    parser.add_argument("--sample-size", type=int, default=None)
+    parser.add_argument("--coarse-passes", type=int, default=None)
+    parser.add_argument("--refine-passes", type=int, default=None)
+    parser.add_argument("--max-races", type=int, default=None)
     return parser.parse_args()
+
+
+def resolve_profile(args: argparse.Namespace) -> CalibrationProfile:
+    """Merge the named profile with any explicit command-line overrides."""
+
+    profile = PROFILE_DEFAULTS[args.profile]
+    return CalibrationProfile(
+        max_races=profile.max_races if args.max_races is None else args.max_races,
+        sample_size=profile.sample_size if args.sample_size is None else args.sample_size,
+        coarse_passes=(
+            profile.coarse_passes
+            if args.coarse_passes is None
+            else args.coarse_passes
+        ),
+        refine_passes=(
+            profile.refine_passes
+            if args.refine_passes is None
+            else args.refine_passes
+        ),
+    )
 
 
 def model_signature(model: ModelParameters) -> tuple[float | int, ...]:
@@ -399,25 +461,34 @@ def select_validation_model(
 
 def main() -> None:
     args = parse_args()
-    all_races = load_historical_races(max_races=args.max_races)
+    profile = resolve_profile(args)
+    all_races = load_historical_races(max_races=profile.max_races)
     training_races, validation_races = split_races(all_races)
-    sampled_training = deterministic_sample(training_races, sample_size=args.sample_size)
+    sampled_training = deterministic_sample(training_races, sample_size=profile.sample_size)
 
     print(
         f"loaded {len(all_races)} races "
         f"({len(training_races)} train / {len(validation_races)} validation)"
+    )
+    print(
+        "profile: "
+        f"{args.profile} "
+        f"(max_races={profile.max_races or 'all'}, "
+        f"sample_size={profile.sample_size}, "
+        f"coarse_passes={profile.coarse_passes}, "
+        f"refine_passes={profile.refine_passes})"
     )
     print(f"coarse search sample size: {len(sampled_training)}")
 
     coarse_result = coarse_search(
         training_sample=sampled_training,
         starting_model=DEFAULT_MODEL_PARAMETERS,
-        coarse_passes=args.coarse_passes,
+        coarse_passes=profile.coarse_passes,
     )
     refine_result = refine_search(
         full_training=training_races,
         starting_model=coarse_result.final_model,
-        refine_passes=args.refine_passes,
+        refine_passes=profile.refine_passes,
     )
     candidate_models: list[ModelParameters] = []
     seen_signatures: set[tuple[float | int, ...]] = set()
