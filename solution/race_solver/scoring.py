@@ -54,6 +54,19 @@ def fresh_lap_count(stint_length: int, fresh_tire_window: int) -> int:
     return max(0, min(stint_length, fresh_tire_window))
 
 
+def sequence_order_emphasis(config: RaceConfig) -> float:
+    """Increase order sensitivity for short races.
+
+    Historical pairwise comparisons of mirrored one-stop strategies show that
+    compound order matters most in short races and is close to neutral in
+    medium and long races. We therefore reuse the existing lap-progress term,
+    but only emphasize it in the short-race regime instead of adding a new
+    tunable parameter.
+    """
+
+    return 1.0 if config.total_laps <= 36 else 0.0
+
+
 def lap_progress_value(lap_number: int, total_laps: int) -> float:
     """Return a centered lap-progress value in the range roughly [-1, 1].
 
@@ -84,6 +97,7 @@ def lap_penalty(
     pace_multiplier, deg_multiplier = compound_multipliers(config, model, compound)
     progress_multiplier = 1.0 + (
         model.lap_progress_pace_scale
+        * sequence_order_emphasis(config)
         * lap_progress_value(lap_number=lap_number, total_laps=config.total_laps)
     )
 
@@ -117,6 +131,7 @@ def stint_penalty_total(
         params.pace_offset
         * pace_multiplier
         * model.lap_progress_pace_scale
+        * sequence_order_emphasis(config)
         * stint_progress_sum(stint=stint, total_laps=config.total_laps)
     )
     fresh_bonus_total = (
@@ -150,6 +165,7 @@ def stint_score_breakdown(
         params.pace_offset
         * pace_multiplier
         * model.lap_progress_pace_scale
+        * sequence_order_emphasis(config)
         * stint_progress_sum(stint=stint, total_laps=config.total_laps)
     )
     fresh_bonus_total = (

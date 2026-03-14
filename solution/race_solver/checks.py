@@ -8,6 +8,7 @@ from .parsing import build_driver_plan
 from .scoring import (
     lap_penalty,
     predict_finishing_order,
+    sequence_order_emphasis,
     stint_penalty_total,
     stint_score_breakdown,
 )
@@ -94,6 +95,10 @@ def run_self_checks() -> None:
     short_wear = stint_score_breakdown(fresh_stint, short_race, model=length_model).wear_total
     long_wear = stint_score_breakdown(fresh_stint, long_race, model=length_model).wear_total
     assert long_wear > short_wear
+
+    assert sequence_order_emphasis(short_race) == 1.0
+    assert sequence_order_emphasis(config) == 1.0
+    assert sequence_order_emphasis(long_race) == 0.0
 
     identical_plans = (
         build_driver_plan(
