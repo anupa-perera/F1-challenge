@@ -89,8 +89,11 @@ def run_self_checks() -> None:
     assert runtime_context_key(short_race) == "non_medium"
     assert runtime_context_key(config) == "non_medium"
     medium_race = RaceConfig("Medium", 45, 87.5, 21.0, 30)
-    assert runtime_context_key(medium_race) == "medium"
+    medium_cool_race = RaceConfig("MediumCool", 45, 87.5, 21.0, 24)
+    assert runtime_context_key(medium_cool_race) == "medium_cool"
+    assert runtime_context_key(medium_race) == "medium_other"
     assert runtime_model_for_config(medium_race) != runtime_model_for_config(short_race)
+    assert runtime_model_for_config(medium_cool_race) != runtime_model_for_config(medium_race)
 
     identical_plans = (
         build_driver_plan(

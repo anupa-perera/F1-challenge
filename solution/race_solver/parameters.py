@@ -41,42 +41,75 @@ DEFAULT_MODEL_PARAMETERS = ModelParameters(
 )
 
 
-MEDIUM_MODEL_PARAMETERS = ModelParameters(
+MEDIUM_COOL_MODEL_PARAMETERS = ModelParameters(
     compounds={
         "SOFT": CompoundParameters(
             pace_offset=-1.5,
             grace_laps=4,
-            deg_rate=0.095,
+            deg_rate=0.09,
             temp_pace_scale=-0.025,
+            temp_deg_scale=0.15,
+            race_length_deg_scale=0.1,
+        ),
+        "MEDIUM": CompoundParameters(
+            pace_offset=0.55,
+            grace_laps=15,
+            deg_rate=0.04,
+            temp_pace_scale=-0.05,
             temp_deg_scale=0.1,
             race_length_deg_scale=0.2,
         ),
+        "HARD": CompoundParameters(
+            pace_offset=1.5,
+            grace_laps=22,
+            deg_rate=0.015,
+            temp_pace_scale=0.05,
+            temp_deg_scale=0.2,
+            race_length_deg_scale=0.15,
+        ),
+    },
+    lap_progress_pace_scale=0.0,
+)
+
+
+MEDIUM_OTHER_MODEL_PARAMETERS = ModelParameters(
+    compounds={
+        "SOFT": CompoundParameters(
+            pace_offset=-1.5,
+            grace_laps=5,
+            deg_rate=0.12,
+            temp_pace_scale=-0.05,
+            temp_deg_scale=-0.05,
+            race_length_deg_scale=0.175,
+        ),
         "MEDIUM": CompoundParameters(
-            pace_offset=0.5,
-            grace_laps=15,
+            pace_offset=0.45,
+            grace_laps=14,
             deg_rate=0.05,
             temp_pace_scale=0.15,
-            temp_deg_scale=0.1,
-            race_length_deg_scale=0.15,
+            temp_deg_scale=-0.125,
+            race_length_deg_scale=0.125,
         ),
         "HARD": CompoundParameters(
             pace_offset=1.5,
             grace_laps=21,
             deg_rate=0.018,
-            temp_pace_scale=0.0,
-            temp_deg_scale=0.025,
+            temp_pace_scale=0.025,
+            temp_deg_scale=-0.15,
             race_length_deg_scale=0.2,
         ),
     },
-    lap_progress_pace_scale=-0.025,
+    lap_progress_pace_scale=0.025,
 )
 
 
-NON_MEDIUM_MODEL_PARAMETERS = ModelParameters(
-    compounds={
-        **dict(DEFAULT_MODEL_PARAMETERS.compounds),
-    },
-    lap_progress_pace_scale=DEFAULT_MODEL_PARAMETERS.lap_progress_pace_scale,
+NON_MEDIUM_MODEL_PARAMETERS = DEFAULT_MODEL_PARAMETERS
+
+
+RUNTIME_CONTEXT_ORDER = (
+    "medium_cool",
+    "medium_other",
+    "non_medium",
 )
 
 
@@ -84,18 +117,20 @@ def runtime_context_key(config: RaceConfig) -> str:
     """Bucket races into the smallest context split that the data supports.
 
     The strongest residual signal after the nonlinear wear upgrade is that
-    medium-length races still behave differently from short and long races.
-    We therefore start with one deterministic gate on total race distance
-    instead of adding multiple interacting context switches at once.
+    medium-length cool races behave differently from other medium races, while
+    short and long races still share the stronger non-medium fit.
     """
 
+    if 37 <= config.total_laps <= 52 and config.track_temp <= 25:
+        return "medium_cool"
     if 37 <= config.total_laps <= 52:
-        return "medium"
+        return "medium_other"
     return "non_medium"
 
 
 RUNTIME_MODEL_PARAMETERS = {
-    "medium": MEDIUM_MODEL_PARAMETERS,
+    "medium_cool": MEDIUM_COOL_MODEL_PARAMETERS,
+    "medium_other": MEDIUM_OTHER_MODEL_PARAMETERS,
     "non_medium": NON_MEDIUM_MODEL_PARAMETERS,
 }
 

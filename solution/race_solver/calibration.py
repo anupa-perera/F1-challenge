@@ -17,6 +17,7 @@ from .parameters import (
     DEFAULT_MODEL_PARAMETERS,
     model_to_dict,
     replace_parameter,
+    RUNTIME_CONTEXT_ORDER,
     runtime_context_key,
     validate_model,
 )
@@ -149,9 +150,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-races", type=int, default=None)
     parser.add_argument(
         "--context-split",
-        choices=("global", "medium_split"),
-        default="medium_split",
-        help="Fit one global model or the runtime medium-vs-non-medium split.",
+        choices=("global", "runtime_split", "medium_split"),
+        default="runtime_split",
+        help=(
+            "Fit one global model or the current runtime context split. "
+            "`medium_split` remains as a backwards-compatible alias."
+        ),
     )
     return parser.parse_args()
 
@@ -570,10 +574,7 @@ def fit_best_model(
 def split_races_by_runtime_context(
     races: list[HistoricalRace],
 ) -> dict[str, list[HistoricalRace]]:
-    grouped = {
-        "medium": [],
-        "non_medium": [],
-    }
+    grouped = {context_key: [] for context_key in RUNTIME_CONTEXT_ORDER}
     for race in races:
         grouped[runtime_context_key(race.config)].append(race)
     return grouped
@@ -614,6 +615,11 @@ def evaluate_context_models(
 def main() -> None:
     args = parse_args()
     profile = resolve_profile(args)
+    effective_context_split = (
+        "runtime_split"
+        if args.context_split == "medium_split"
+        else args.context_split
+    )
     all_races = load_historical_races(max_races=profile.max_races)
     training_races, validation_races = split_races(all_races)
     sampled_training = deterministic_sample(training_races, sample_size=profile.sample_size)
@@ -630,9 +636,9 @@ def main() -> None:
         f"coarse_passes={profile.coarse_passes}, "
         f"refine_passes={profile.refine_passes})"
     )
-    print(f"context_split: {args.context_split}")
+    print(f"context_split: {effective_context_split}")
 
-    if args.context_split == "global":
+    if effective_context_split == "global":
         fit_result = fit_best_model(
             training_races=training_races,
             validation_races=validation_races,
@@ -650,7 +656,7 @@ def main() -> None:
     validation_by_context = split_races_by_runtime_context(validation_races)
     context_models: dict[str, ModelParameters] = {}
 
-    for context_key in ("medium", "non_medium"):
+    for context_key in RUNTIME_CONTEXT_ORDER:
         print(
             f"context={context_key} "
             f"({len(training_by_context[context_key])} train / "
