@@ -72,6 +72,29 @@ def run_self_checks() -> None:
     assert short_breakdown.fresh_bonus_total < 0
     assert abs(short_breakdown.fresh_bonus_total) < abs(long_breakdown.fresh_bonus_total)
 
+    # A longer race should increase wear pressure more than a shorter race
+    # when everything else stays fixed, because the calibrated model now uses
+    # race length instead of base lap time as the second context axis.
+    short_race = RaceConfig(
+        track="Short",
+        total_laps=32,
+        base_lap_time=87.5,
+        pit_lane_time=21.0,
+        track_temp=30,
+    )
+    long_race = RaceConfig(
+        track="Long",
+        total_laps=60,
+        base_lap_time=87.5,
+        pit_lane_time=21.0,
+        track_temp=30,
+    )
+    length_model = replace_parameter(DEFAULT_MODEL_PARAMETERS, "SOFT", "temp_deg_scale", 0.0)
+    length_model = replace_parameter(length_model, "SOFT", "race_length_deg_scale", 0.1)
+    short_wear = stint_score_breakdown(fresh_stint, short_race, model=length_model).wear_total
+    long_wear = stint_score_breakdown(fresh_stint, long_race, model=length_model).wear_total
+    assert long_wear > short_wear
+
     identical_plans = (
         build_driver_plan(
             total_laps=6,

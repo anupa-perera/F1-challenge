@@ -45,9 +45,8 @@ PARAMETER_BOUNDS = {
         "HARD": (0.005, 0.08),
     },
     "temp_pace_scale": {compound: (-0.2, 0.2) for compound in COMPOUND_ORDER},
-    "base_pace_scale": {compound: (-0.2, 0.2) for compound in COMPOUND_ORDER},
     "temp_deg_scale": {compound: (-0.2, 0.2) for compound in COMPOUND_ORDER},
-    "base_deg_scale": {compound: (-0.2, 0.2) for compound in COMPOUND_ORDER},
+    "race_length_deg_scale": {compound: (-0.2, 0.2) for compound in COMPOUND_ORDER},
     "fresh_tire_window": {None: (0, 8)},
     "lap_progress_pace_scale": {None: (-0.75, 0.75)},
 }
@@ -57,9 +56,8 @@ COARSE_STEPS = {
     "grace_laps": 1,
     "deg_rate": 0.01,
     "temp_pace_scale": 0.05,
-    "base_pace_scale": 0.05,
     "temp_deg_scale": 0.05,
-    "base_deg_scale": 0.05,
+    "race_length_deg_scale": 0.05,
     "fresh_tire_window": 1,
     "lap_progress_pace_scale": 0.05,
 }
@@ -69,9 +67,8 @@ REFINE_STEPS = {
     "grace_laps": 1,
     "deg_rate": 0.005,
     "temp_pace_scale": 0.025,
-    "base_pace_scale": 0.025,
     "temp_deg_scale": 0.025,
-    "base_deg_scale": 0.025,
+    "race_length_deg_scale": 0.025,
     "fresh_tire_window": 1,
     "lap_progress_pace_scale": 0.025,
 }
@@ -120,9 +117,8 @@ def model_signature(model: ModelParameters) -> tuple[float | int, ...]:
                 params.grace_laps,
                 round(params.deg_rate, 6),
                 round(params.temp_pace_scale, 6),
-                round(params.base_pace_scale, 6),
                 round(params.temp_deg_scale, 6),
-                round(params.base_deg_scale, 6),
+                round(params.race_length_deg_scale, 6),
             ]
         )
     return tuple(signature)
@@ -239,9 +235,8 @@ def search_sequence() -> list[tuple[str | None, str]]:
         "grace_laps",
         "deg_rate",
         "temp_pace_scale",
-        "base_pace_scale",
         "temp_deg_scale",
-        "base_deg_scale",
+        "race_length_deg_scale",
     ]
     sequence: list[tuple[str | None, str]] = []
     for field_name in field_order:

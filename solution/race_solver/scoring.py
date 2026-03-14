@@ -16,15 +16,18 @@ from .parameters import DEFAULT_MODEL_PARAMETERS
 
 
 def normalize_context(config: RaceConfig) -> tuple[float, float]:
-    """Map race context onto a compact scale used by the v1 model.
+    """Map race context onto compact scales used by the scoring model.
 
     The current model ignores the track name and uses the numeric race fields
-    directly, because those are the values that change lap cost.
+    directly, because those are the values that change lap cost. Historical
+    analysis also showed that total race length explains winning strategy shape
+    much better than base lap time, so the second context axis follows
+    `total_laps` rather than nominal one-lap pace.
     """
 
     temp_norm = (config.track_temp - 30.0) / 12.0
-    base_norm = (config.base_lap_time - 87.5) / 7.5
-    return temp_norm, base_norm
+    race_length_norm = (config.total_laps - 45.0) / 10.0
+    return temp_norm, race_length_norm
 
 
 def compound_multipliers(
@@ -33,15 +36,14 @@ def compound_multipliers(
     compound: str,
 ) -> tuple[float, float]:
     params = model.compounds[compound]
-    temp_norm, base_norm = normalize_context(config)
+    temp_norm, race_length_norm = normalize_context(config)
 
     pace_multiplier = 1.0
     pace_multiplier += params.temp_pace_scale * temp_norm
-    pace_multiplier += params.base_pace_scale * base_norm
 
     deg_multiplier = 1.0
     deg_multiplier += params.temp_deg_scale * temp_norm
-    deg_multiplier += params.base_deg_scale * base_norm
+    deg_multiplier += params.race_length_deg_scale * race_length_norm
 
     return pace_multiplier, deg_multiplier
 

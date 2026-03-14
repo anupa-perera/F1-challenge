@@ -8,44 +8,40 @@ from .models import CompoundParameters, ModelParameters
 
 
 # These values are the strongest validated default so far.
-# Experimental mechanics like fresh-tire bonuses and lap-progress effects stay
-# available in the model, but remain disabled until calibration shows a clear
-# improvement from turning them on.
+# Fresh-tire bonuses remain disabled, while the fitted model keeps a small
+# lap-progress effect because calibration found a slight ordering benefit.
 DEFAULT_MODEL_PARAMETERS = ModelParameters(
     compounds={
         "SOFT": CompoundParameters(
-            pace_offset=-0.30,
+            pace_offset=-0.35,
             fresh_bonus=0.00,
             grace_laps=2,
-            deg_rate=0.105,
-            temp_pace_scale=0.20,
-            base_pace_scale=0.10,
+            deg_rate=0.11,
+            temp_pace_scale=0.10,
             temp_deg_scale=0.125,
-            base_deg_scale=0.075,
+            race_length_deg_scale=-0.0,
         ),
         "MEDIUM": CompoundParameters(
             pace_offset=0.25,
             fresh_bonus=0.00,
-            grace_laps=12,
+            grace_laps=13,
             deg_rate=0.05,
             temp_pace_scale=0.00,
-            base_pace_scale=0.10,
-            temp_deg_scale=0.175,
-            base_deg_scale=0.075,
+            temp_deg_scale=0.15,
+            race_length_deg_scale=0.075,
         ),
         "HARD": CompoundParameters(
-            pace_offset=0.45,
+            pace_offset=0.40,
             fresh_bonus=0.00,
             grace_laps=16,
             deg_rate=0.018,
             temp_pace_scale=0.05,
-            base_pace_scale=0.025,
             temp_deg_scale=0.175,
-            base_deg_scale=0.125,
+            race_length_deg_scale=0.10,
         ),
     },
     fresh_tire_window=0,
-    lap_progress_pace_scale=0.0,
+    lap_progress_pace_scale=0.025,
 )
 
 
@@ -120,9 +116,8 @@ def model_to_dict(model: ModelParameters) -> dict[str, dict[str, float | int]]:
                 "grace_laps": params.grace_laps,
                 "deg_rate": params.deg_rate,
                 "temp_pace_scale": params.temp_pace_scale,
-                "base_pace_scale": params.base_pace_scale,
                 "temp_deg_scale": params.temp_deg_scale,
-                "base_deg_scale": params.base_deg_scale,
+                "race_length_deg_scale": params.race_length_deg_scale,
             }
             for compound, params in model.compounds.items()
         },

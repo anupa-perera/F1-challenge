@@ -52,9 +52,8 @@ class CompoundParameters:
     grace_laps: int
     deg_rate: float
     temp_pace_scale: float
-    base_pace_scale: float
     temp_deg_scale: float
-    base_deg_scale: float
+    race_length_deg_scale: float
 
 
 @dataclass(frozen=True)
