@@ -41,9 +41,12 @@ def compound_multipliers(
     pace_multiplier = 1.0
     pace_multiplier += params.temp_pace_scale * temp_norm
 
-    deg_multiplier = 1.0
-    deg_multiplier += params.temp_deg_scale * temp_norm
-    deg_multiplier += params.race_length_deg_scale * race_length_norm
+    # Tire wear is driven by heat and by how demanding the overall race is on
+    # strategy length. We keep the same calibrated scalars, but combine them
+    # multiplicatively so "hot and long" races can express more wear pressure
+    # than a purely additive model without inventing extra parameters.
+    deg_multiplier = 1.0 + (params.temp_deg_scale * temp_norm)
+    deg_multiplier *= 1.0 + (params.race_length_deg_scale * race_length_norm)
 
     return pace_multiplier, deg_multiplier
 
