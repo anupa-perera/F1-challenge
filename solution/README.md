@@ -65,3 +65,14 @@ The solver is organized so each file answers one question:
 7. Analyze a whole suite with `python solution/analyze_suite.py`.
 8. Mine historical strategy patterns with `python solution/analyze_historical_patterns.py`.
    Use `--split validation` to inspect held-out residuals before changing the model.
+
+## Backlog
+
+- Residual visualization/export:
+  add a lightweight path to export held-out residuals for heatmaps and scatter
+  plots by strategy family, `total_laps`, `track_temp`, `pit_burden`, and
+  `base_lap_time`.
+- Normalized diagnostic views:
+  use normalized or winsorized plots to compare context axes fairly, but keep
+  full historical data in calibration and evaluation instead of dropping
+  "outliers" from the deterministic target.
