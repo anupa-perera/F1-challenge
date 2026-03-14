@@ -6,6 +6,8 @@ from .models import RaceConfig, Stint
 from .parameters import DEFAULT_MODEL_PARAMETERS, replace_parameter
 from .parsing import build_driver_plan
 from .scoring import (
+    driver_score_breakdown,
+    driver_total_time,
     lap_penalty,
     predict_finishing_order,
     sequence_order_emphasis,
@@ -46,6 +48,10 @@ def run_self_checks() -> None:
         for age in range(1, fresh_stint.length + 1)
     )
     assert abs(lap_sum - stint_penalty_total(fresh_stint, config)) < 1e-9
+    assert abs(
+        driver_total_time(config, driver_plan)
+        - driver_score_breakdown(config, driver_plan).total_time
+    ) < 1e-9
 
     short_stint = Stint(compound="SOFT", start_lap=1, end_lap=2, length=2)
     experimental_model = replace_parameter(

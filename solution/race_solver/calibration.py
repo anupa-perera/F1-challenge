@@ -434,13 +434,19 @@ def select_validation_model(
     training_races: list[HistoricalRace],
     validation_races: list[HistoricalRace],
 ) -> tuple[ModelParameters, Evaluation, Evaluation]:
+    training_cache: dict[tuple[float | int, ...], Evaluation] = {}
+    validation_cache: dict[tuple[float | int, ...], Evaluation] = {}
     best_model = candidates[0]
-    best_train_eval = evaluate_model(training_races, best_model, {})
-    best_validation_eval = evaluate_model(validation_races, best_model, {})
+    best_train_eval = evaluate_model(training_races, best_model, training_cache)
+    best_validation_eval = evaluate_model(validation_races, best_model, validation_cache)
 
     for candidate in candidates[1:]:
-        candidate_train_eval = evaluate_model(training_races, candidate, {})
-        candidate_validation_eval = evaluate_model(validation_races, candidate, {})
+        candidate_train_eval = evaluate_model(training_races, candidate, training_cache)
+        candidate_validation_eval = evaluate_model(
+            validation_races,
+            candidate,
+            validation_cache,
+        )
         if (
             candidate_validation_eval.exact_matches,
             candidate_validation_eval.pairwise_correct,

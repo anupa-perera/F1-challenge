@@ -225,16 +225,37 @@ def driver_score_breakdown(
     )
 
 
+def driver_total_time(
+    config: RaceConfig,
+    driver_plan: DriverPlan,
+    model: ModelParameters = DEFAULT_MODEL_PARAMETERS,
+) -> float:
+    """Return total race time without constructing explanation objects.
+
+    Calibration evaluates thousands of candidate models across many races, so
+    the hot path should add times directly. The richer breakdown path stays
+    available for debugging tools, but prediction only needs this scalar total.
+    """
+
+    base_race_time = config.base_lap_time * config.total_laps
+    pit_stop_time = config.pit_lane_time * driver_plan.stop_count
+    tire_penalty_time = sum(
+        stint_penalty_total(stint=stint, config=config, model=model)
+        for stint in driver_plan.stints
+    )
+    return base_race_time + pit_stop_time + tire_penalty_time
+
+
 def score_driver(
     config: RaceConfig,
     driver_plan: DriverPlan,
     model: ModelParameters = DEFAULT_MODEL_PARAMETERS,
 ) -> float:
-    return driver_score_breakdown(
+    return driver_total_time(
         config=config,
         driver_plan=driver_plan,
         model=model,
-    ).total_time
+    )
 
 
 def predict_finishing_order(
@@ -244,7 +265,7 @@ def predict_finishing_order(
 ) -> list[str]:
     scored_drivers = [
         (
-            score_driver(config=config, driver_plan=driver_plan, model=model),
+            driver_total_time(config=config, driver_plan=driver_plan, model=model),
             driver_plan.driver_id,
         )
         for driver_plan in driver_plans
