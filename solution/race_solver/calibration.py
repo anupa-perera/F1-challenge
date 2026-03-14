@@ -29,11 +29,6 @@ PARAMETER_BOUNDS = {
         "MEDIUM": (-0.75, 0.75),
         "HARD": (0.0, 1.5),
     },
-    "fresh_bonus": {
-        "SOFT": (-0.40, 0.10),
-        "MEDIUM": (-0.20, 0.10),
-        "HARD": (-0.10, 0.10),
-    },
     "grace_laps": {
         "SOFT": (2, 10),
         "MEDIUM": (6, 18),
@@ -47,29 +42,24 @@ PARAMETER_BOUNDS = {
     "temp_pace_scale": {compound: (-0.2, 0.2) for compound in COMPOUND_ORDER},
     "temp_deg_scale": {compound: (-0.2, 0.2) for compound in COMPOUND_ORDER},
     "race_length_deg_scale": {compound: (-0.2, 0.2) for compound in COMPOUND_ORDER},
-    "fresh_tire_window": {None: (0, 8)},
     "lap_progress_pace_scale": {None: (-0.75, 0.75)},
 }
 COARSE_STEPS = {
     "pace_offset": 0.1,
-    "fresh_bonus": 0.05,
     "grace_laps": 1,
     "deg_rate": 0.01,
     "temp_pace_scale": 0.05,
     "temp_deg_scale": 0.05,
     "race_length_deg_scale": 0.05,
-    "fresh_tire_window": 1,
     "lap_progress_pace_scale": 0.05,
 }
 REFINE_STEPS = {
     "pace_offset": 0.05,
-    "fresh_bonus": 0.025,
     "grace_laps": 1,
     "deg_rate": 0.005,
     "temp_pace_scale": 0.025,
     "temp_deg_scale": 0.025,
     "race_length_deg_scale": 0.025,
-    "fresh_tire_window": 1,
     "lap_progress_pace_scale": 0.025,
 }
 
@@ -173,7 +163,6 @@ def resolve_profile(args: argparse.Namespace) -> CalibrationProfile:
 
 def model_signature(model: ModelParameters) -> tuple[float | int, ...]:
     signature: list[float | int] = [
-        model.fresh_tire_window,
         round(model.lap_progress_pace_scale, 6),
     ]
     for compound in COMPOUND_ORDER:
@@ -181,7 +170,6 @@ def model_signature(model: ModelParameters) -> tuple[float | int, ...]:
         signature.extend(
             [
                 round(params.pace_offset, 6),
-                round(params.fresh_bonus, 6),
                 params.grace_laps,
                 round(params.deg_rate, 6),
                 round(params.temp_pace_scale, 6),
@@ -265,7 +253,7 @@ def coarse_candidate_values(
 ) -> list[float | int]:
     low, high = PARAMETER_BOUNDS[field_name][compound]
     step = COARSE_STEPS[field_name]
-    if field_name in {"grace_laps", "fresh_tire_window"}:
+    if field_name == "grace_laps":
         return list(range(int(low), int(high) + 1, int(step)))
     return frange(float(low), float(high), float(step))
 
@@ -278,7 +266,7 @@ def refine_candidate_values(
     low, high = PARAMETER_BOUNDS[field_name][compound]
     step = REFINE_STEPS[field_name]
 
-    if field_name in {"grace_laps", "fresh_tire_window"}:
+    if field_name == "grace_laps":
         values = {int(current_value)}
         for delta in (-2, -1, 1, 2):
             candidate = int(current_value) + delta
@@ -305,7 +293,7 @@ def next_directional_value(
     low, high = PARAMETER_BOUNDS[field_name][compound]
     step = REFINE_STEPS[field_name]
 
-    if field_name in {"grace_laps", "fresh_tire_window"}:
+    if field_name == "grace_laps":
         candidate = int(current_value) + (direction * int(step))
         if low <= candidate <= high:
             return candidate
@@ -331,10 +319,8 @@ def append_checkpoint(
 
 def search_sequence() -> list[tuple[str | None, str]]:
     field_order = [
-        "fresh_tire_window",
         "lap_progress_pace_scale",
         "pace_offset",
-        "fresh_bonus",
         "grace_laps",
         "deg_rate",
         "temp_pace_scale",
@@ -343,7 +329,7 @@ def search_sequence() -> list[tuple[str | None, str]]:
     ]
     sequence: list[tuple[str | None, str]] = []
     for field_name in field_order:
-        if field_name in {"fresh_tire_window", "lap_progress_pace_scale"}:
+        if field_name == "lap_progress_pace_scale":
             sequence.append((None, field_name))
             continue
         for compound in COMPOUND_ORDER:

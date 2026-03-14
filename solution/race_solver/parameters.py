@@ -14,7 +14,6 @@ DEFAULT_MODEL_PARAMETERS = ModelParameters(
     compounds={
         "SOFT": CompoundParameters(
             pace_offset=-0.35,
-            fresh_bonus=0.00,
             grace_laps=2,
             deg_rate=0.11,
             temp_pace_scale=-0.025,
@@ -23,7 +22,6 @@ DEFAULT_MODEL_PARAMETERS = ModelParameters(
         ),
         "MEDIUM": CompoundParameters(
             pace_offset=0.25,
-            fresh_bonus=0.00,
             grace_laps=12,
             deg_rate=0.05,
             temp_pace_scale=0.175,
@@ -32,7 +30,6 @@ DEFAULT_MODEL_PARAMETERS = ModelParameters(
         ),
         "HARD": CompoundParameters(
             pace_offset=0.45,
-            fresh_bonus=0.00,
             grace_laps=16,
             deg_rate=0.018,
             temp_pace_scale=0.2,
@@ -40,7 +37,6 @@ DEFAULT_MODEL_PARAMETERS = ModelParameters(
             race_length_deg_scale=0.2,
         ),
     },
-    fresh_tire_window=0,
     lap_progress_pace_scale=-0.025,
 )
 
@@ -62,7 +58,6 @@ def replace_parameter(
             **dict(model.compounds),
             compound: replacement,
         },
-        fresh_tire_window=model.fresh_tire_window,
         lap_progress_pace_scale=model.lap_progress_pace_scale,
     )
 
@@ -93,26 +88,17 @@ def validate_model(model: ModelParameters) -> bool:
     ):
         return False
 
-    if not (
-        compounds["SOFT"].fresh_bonus
-        <= compounds["MEDIUM"].fresh_bonus
-        <= compounds["HARD"].fresh_bonus
-    ):
-        return False
-
     return True
 
 
 def model_to_dict(model: ModelParameters) -> dict[str, dict[str, float | int]]:
     return {
         "globals": {
-            "fresh_tire_window": model.fresh_tire_window,
             "lap_progress_pace_scale": model.lap_progress_pace_scale,
         },
         "compounds": {
             compound: {
                 "pace_offset": params.pace_offset,
-                "fresh_bonus": params.fresh_bonus,
                 "grace_laps": params.grace_laps,
                 "deg_rate": params.deg_rate,
                 "temp_pace_scale": params.temp_pace_scale,

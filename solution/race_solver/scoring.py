@@ -51,12 +51,6 @@ def compound_multipliers(
     return pace_multiplier, deg_multiplier
 
 
-def fresh_lap_count(stint_length: int, fresh_tire_window: int) -> int:
-    """Return how many laps of a stint receive the fresh-tire bonus."""
-
-    return max(0, min(stint_length, fresh_tire_window))
-
-
 def sequence_order_emphasis(config: RaceConfig) -> float:
     """Increase order sensitivity for short races with a small taper.
 
@@ -109,13 +103,9 @@ def lap_penalty(
         * lap_progress_value(lap_number=lap_number, total_laps=config.total_laps)
     )
 
-    fresh_bonus_term = 0.0
-    if age <= model.fresh_tire_window:
-        fresh_bonus_term = params.fresh_bonus * pace_multiplier
-
     pace_term = params.pace_offset * pace_multiplier * progress_multiplier
     wear_term = max(0, age - params.grace_laps) * params.deg_rate * deg_multiplier
-    return pace_term + fresh_bonus_term + wear_term
+    return pace_term + wear_term
 
 
 def stint_penalty_total(
@@ -142,12 +132,7 @@ def stint_penalty_total(
         * sequence_order_emphasis(config)
         * stint_progress_sum(stint=stint, total_laps=config.total_laps)
     )
-    fresh_bonus_total = (
-        fresh_lap_count(stint.length, model.fresh_tire_window)
-        * params.fresh_bonus
-        * pace_multiplier
-    )
-    pace_total = base_pace_total + progress_adjustment_total + fresh_bonus_total
+    pace_total = base_pace_total + progress_adjustment_total
     overage_laps = max(0, stint.length - params.grace_laps)
     wear_units = overage_laps * (overage_laps + 1) / 2.0
     wear_total = wear_units * params.deg_rate * deg_multiplier
@@ -176,12 +161,7 @@ def stint_score_breakdown(
         * sequence_order_emphasis(config)
         * stint_progress_sum(stint=stint, total_laps=config.total_laps)
     )
-    fresh_bonus_total = (
-        fresh_lap_count(stint.length, model.fresh_tire_window)
-        * params.fresh_bonus
-        * pace_multiplier
-    )
-    pace_total = base_pace_total + progress_adjustment_total + fresh_bonus_total
+    pace_total = base_pace_total + progress_adjustment_total
     overage_laps = max(0, stint.length - params.grace_laps)
     wear_units = overage_laps * (overage_laps + 1) / 2.0
     wear_total = wear_units * params.deg_rate * deg_multiplier
@@ -193,7 +173,6 @@ def stint_score_breakdown(
         length=stint.length,
         base_pace_total=base_pace_total,
         progress_adjustment_total=progress_adjustment_total,
-        fresh_bonus_total=fresh_bonus_total,
         pace_total=pace_total,
         wear_total=wear_total,
         total_penalty=pace_total + wear_total,
@@ -244,18 +223,6 @@ def driver_total_time(
         for stint in driver_plan.stints
     )
     return base_race_time + pit_stop_time + tire_penalty_time
-
-
-def score_driver(
-    config: RaceConfig,
-    driver_plan: DriverPlan,
-    model: ModelParameters = DEFAULT_MODEL_PARAMETERS,
-) -> float:
-    return driver_total_time(
-        config=config,
-        driver_plan=driver_plan,
-        model=model,
-    )
 
 
 def predict_finishing_order(

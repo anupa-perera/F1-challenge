@@ -53,32 +53,6 @@ def run_self_checks() -> None:
         - driver_score_breakdown(config, driver_plan).total_time
     ) < 1e-9
 
-    short_stint = Stint(compound="SOFT", start_lap=1, end_lap=2, length=2)
-    experimental_model = replace_parameter(
-        DEFAULT_MODEL_PARAMETERS,
-        None,
-        "fresh_tire_window",
-        3,
-    )
-    experimental_model = replace_parameter(
-        experimental_model,
-        "SOFT",
-        "fresh_bonus",
-        -0.1,
-    )
-    short_breakdown = stint_score_breakdown(
-        short_stint,
-        config,
-        model=experimental_model,
-    )
-    long_breakdown = stint_score_breakdown(
-        fresh_stint,
-        config,
-        model=experimental_model,
-    )
-    assert short_breakdown.fresh_bonus_total < 0
-    assert abs(short_breakdown.fresh_bonus_total) < abs(long_breakdown.fresh_bonus_total)
-
     # A longer race should increase wear pressure more than a shorter race
     # when everything else stays fixed, because the calibrated model now uses
     # race length instead of base lap time as the second context axis.

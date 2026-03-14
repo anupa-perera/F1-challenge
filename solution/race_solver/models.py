@@ -48,7 +48,6 @@ class RaceInput:
 @dataclass(frozen=True)
 class CompoundParameters:
     pace_offset: float
-    fresh_bonus: float
     grace_laps: int
     deg_rate: float
     temp_pace_scale: float
@@ -59,7 +58,6 @@ class CompoundParameters:
 @dataclass(frozen=True)
 class ModelParameters:
     compounds: Mapping[str, CompoundParameters]
-    fresh_tire_window: int
     lap_progress_pace_scale: float
 
 
@@ -71,7 +69,6 @@ class StintScoreBreakdown:
     length: int
     base_pace_total: float
     progress_adjustment_total: float
-    fresh_bonus_total: float
     pace_total: float
     wear_total: float
     total_penalty: float

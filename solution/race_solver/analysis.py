@@ -58,7 +58,6 @@ class WinnerPattern:
     total_laps: int
     track_temp: int
     pit_burden: float
-    thermal_stress: float
 
 
 @dataclass(frozen=True)
@@ -133,17 +132,6 @@ def pit_burden_bucket(pit_burden: float) -> str:
     return "high"
 
 
-def thermal_stress(total_laps: int, track_temp: int) -> float:
-    """Build a context feature from existing columns instead of inventing one.
-
-    Historical winners show a U-shaped relation with temperature: both cool and
-    hot races produce more multi-stop winners than the middle. Modeling that
-    shape starts with "distance from the thermal middle" rather than raw heat.
-    """
-
-    return total_laps * abs(track_temp - 30.0)
-
-
 def extract_winner_patterns(races: list[HistoricalRace]) -> list[WinnerPattern]:
     """Reduce each race to the winning strategy features we can actually observe."""
 
@@ -166,10 +154,6 @@ def extract_winner_patterns(races: list[HistoricalRace]) -> list[WinnerPattern]:
                 total_laps=race.config.total_laps,
                 track_temp=race.config.track_temp,
                 pit_burden=race.config.pit_lane_time / race.config.base_lap_time,
-                thermal_stress=thermal_stress(
-                    total_laps=race.config.total_laps,
-                    track_temp=race.config.track_temp,
-                ),
             )
         )
     return patterns
@@ -351,49 +335,6 @@ def compare_case_directories(
                 case_name=input_path.stem,
                 payload=payload,
                 expected_order=expected_payload["finishing_positions"],
-            )
-        )
-    return comparisons, summarize_case_comparisons(comparisons)
-
-
-def compare_historical_races(
-    races: list[HistoricalRace],
-) -> tuple[list[CaseComparison], SuiteSummary]:
-    comparisons = []
-    for race in races:
-        payload = {
-            "race_id": race.race_id,
-            "race_config": {
-                "track": race.config.track,
-                "total_laps": race.config.total_laps,
-                "base_lap_time": race.config.base_lap_time,
-                "pit_lane_time": race.config.pit_lane_time,
-                "track_temp": race.config.track_temp,
-            },
-            "strategies": {},
-        }
-        for index, driver_plan in enumerate(race.driver_plans, start=1):
-            pit_stops = []
-            for stint_index in range(len(driver_plan.stints) - 1):
-                current_stint = driver_plan.stints[stint_index]
-                next_stint = driver_plan.stints[stint_index + 1]
-                pit_stops.append(
-                    {
-                        "lap": current_stint.end_lap,
-                        "from_tire": current_stint.compound,
-                        "to_tire": next_stint.compound,
-                    }
-                )
-            payload["strategies"][f"pos{index}"] = {
-                "driver_id": driver_plan.driver_id,
-                "starting_tire": driver_plan.starting_tire,
-                "pit_stops": pit_stops,
-            }
-        comparisons.append(
-            compare_case_payload(
-                case_name=race.race_id,
-                payload=payload,
-                expected_order=list(race.actual_order),
             )
         )
     return comparisons, summarize_case_comparisons(comparisons)
