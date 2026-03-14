@@ -4,6 +4,8 @@ from .parameters import (
     DEFAULT_MODEL_PARAMETERS,
     model_to_dict,
     replace_parameter,
+    runtime_context_key,
+    runtime_model_for_config,
     validate_model,
 )
 from .parsing import build_driver_plan, build_driver_plans, parse_race_config, parse_race_input
@@ -17,6 +19,8 @@ __all__ = [
     "parse_race_config",
     "parse_race_input",
     "replace_parameter",
+    "runtime_context_key",
+    "runtime_model_for_config",
     "simulate_race",
     "validate_model",
 ]

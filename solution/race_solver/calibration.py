@@ -17,6 +17,7 @@ from .parameters import (
     DEFAULT_MODEL_PARAMETERS,
     model_to_dict,
     replace_parameter,
+    runtime_context_key,
     validate_model,
 )
 from .scoring import predict_finishing_order
@@ -98,6 +99,14 @@ class CalibrationProfile:
     refine_passes: int
 
 
+@dataclass(frozen=True)
+class FitResult:
+    model: ModelParameters
+    train_evaluation: Evaluation
+    validation_evaluation: Evaluation
+    candidate_count: int
+
+
 PROFILE_DEFAULTS = {
     "smoke": CalibrationProfile(
         max_races=1000,
@@ -138,6 +147,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--coarse-passes", type=int, default=None)
     parser.add_argument("--refine-passes", type=int, default=None)
     parser.add_argument("--max-races", type=int, default=None)
+    parser.add_argument(
+        "--context-split",
+        choices=("global", "medium_split"),
+        default="medium_split",
+        help="Fit one global model or the runtime medium-vs-non-medium split.",
+    )
     return parser.parse_args()
 
 
@@ -511,6 +526,91 @@ def select_validation_model(
     return best_model, best_train_eval, best_validation_eval
 
 
+def fit_best_model(
+    training_races: list[HistoricalRace],
+    validation_races: list[HistoricalRace],
+    profile: CalibrationProfile,
+    starting_model: ModelParameters = DEFAULT_MODEL_PARAMETERS,
+) -> FitResult:
+    sampled_training = deterministic_sample(training_races, sample_size=profile.sample_size)
+    print(f"coarse search sample size: {len(sampled_training)}")
+
+    coarse_result = coarse_search(
+        training_sample=sampled_training,
+        starting_model=starting_model,
+        coarse_passes=profile.coarse_passes,
+    )
+    refine_result = refine_search(
+        full_training=training_races,
+        starting_model=coarse_result.final_model,
+        refine_passes=profile.refine_passes,
+    )
+    candidate_models: list[ModelParameters] = []
+    seen_signatures: set[tuple[float | int, ...]] = set()
+    for candidate in (
+        starting_model,
+        *coarse_result.checkpoints,
+        *refine_result.checkpoints,
+    ):
+        append_checkpoint(candidate_models, seen_signatures, candidate)
+
+    best_model, train_eval, validation_eval = select_validation_model(
+        candidate_models,
+        training_races=training_races,
+        validation_races=validation_races,
+    )
+    return FitResult(
+        model=best_model,
+        train_evaluation=train_eval,
+        validation_evaluation=validation_eval,
+        candidate_count=len(candidate_models),
+    )
+
+
+def split_races_by_runtime_context(
+    races: list[HistoricalRace],
+) -> dict[str, list[HistoricalRace]]:
+    grouped = {
+        "medium": [],
+        "non_medium": [],
+    }
+    for race in races:
+        grouped[runtime_context_key(race.config)].append(race)
+    return grouped
+
+
+def evaluate_context_models(
+    races: list[HistoricalRace],
+    models_by_context: dict[str, ModelParameters],
+) -> Evaluation:
+    exact_matches = 0
+    pairwise_correct = 0
+
+    for race in races:
+        model = models_by_context[runtime_context_key(race.config)]
+        predicted = predict_finishing_order(
+            config=race.config,
+            driver_plans=race.driver_plans,
+            model=model,
+        )
+        if tuple(predicted) == race.actual_order:
+            exact_matches += 1
+
+        predicted_rank = {driver_id: index for index, driver_id in enumerate(predicted)}
+        for index, left_driver in enumerate(race.actual_order):
+            left_rank = predicted_rank[left_driver]
+            for right_driver in race.actual_order[index + 1 :]:
+                if left_rank < predicted_rank[right_driver]:
+                    pairwise_correct += 1
+
+    return Evaluation(
+        exact_matches=exact_matches,
+        race_count=len(races),
+        pairwise_correct=pairwise_correct,
+        pairwise_total=len(races) * PAIRWISE_COMPARISONS_PER_RACE,
+    )
+
+
 def main() -> None:
     args = parse_args()
     profile = resolve_profile(args)
@@ -530,35 +630,55 @@ def main() -> None:
         f"coarse_passes={profile.coarse_passes}, "
         f"refine_passes={profile.refine_passes})"
     )
-    print(f"coarse search sample size: {len(sampled_training)}")
+    print(f"context_split: {args.context_split}")
 
-    coarse_result = coarse_search(
-        training_sample=sampled_training,
-        starting_model=DEFAULT_MODEL_PARAMETERS,
-        coarse_passes=profile.coarse_passes,
-    )
-    refine_result = refine_search(
-        full_training=training_races,
-        starting_model=coarse_result.final_model,
-        refine_passes=profile.refine_passes,
-    )
-    candidate_models: list[ModelParameters] = []
-    seen_signatures: set[tuple[float | int, ...]] = set()
-    for candidate in (
-        DEFAULT_MODEL_PARAMETERS,
-        *coarse_result.checkpoints,
-        *refine_result.checkpoints,
-    ):
-        append_checkpoint(candidate_models, seen_signatures, candidate)
+    if args.context_split == "global":
+        fit_result = fit_best_model(
+            training_races=training_races,
+            validation_races=validation_races,
+            profile=profile,
+            starting_model=DEFAULT_MODEL_PARAMETERS,
+        )
+        print_evaluation("train", fit_result.train_evaluation)
+        print_evaluation("validation", fit_result.validation_evaluation)
+        print(f"validation_selected_from={fit_result.candidate_count} checkpoints")
+        print("best_parameters=")
+        print(json.dumps(model_to_dict(fit_result.model), indent=2, sort_keys=True))
+        return
 
-    best_model, train_eval, validation_eval = select_validation_model(
-        candidate_models,
-        training_races=training_races,
-        validation_races=validation_races,
-    )
+    training_by_context = split_races_by_runtime_context(training_races)
+    validation_by_context = split_races_by_runtime_context(validation_races)
+    context_models: dict[str, ModelParameters] = {}
 
-    print_evaluation("train", train_eval)
-    print_evaluation("validation", validation_eval)
-    print(f"validation_selected_from={len(candidate_models)} checkpoints")
-    print("best_parameters=")
-    print(json.dumps(model_to_dict(best_model), indent=2, sort_keys=True))
+    for context_key in ("medium", "non_medium"):
+        print(
+            f"context={context_key} "
+            f"({len(training_by_context[context_key])} train / "
+            f"{len(validation_by_context[context_key])} validation)"
+        )
+        fit_result = fit_best_model(
+            training_races=training_by_context[context_key],
+            validation_races=validation_by_context[context_key],
+            profile=profile,
+            starting_model=DEFAULT_MODEL_PARAMETERS,
+        )
+        context_models[context_key] = fit_result.model
+        print_evaluation(f"{context_key} train", fit_result.train_evaluation)
+        print_evaluation(f"{context_key} validation", fit_result.validation_evaluation)
+        print(f"{context_key}_validation_selected_from={fit_result.candidate_count} checkpoints")
+        print(f"{context_key}_parameters=")
+        print(json.dumps(model_to_dict(fit_result.model), indent=2, sort_keys=True))
+
+    combined_validation = evaluate_context_models(validation_races, context_models)
+    print_evaluation("combined validation", combined_validation)
+    print("runtime_parameters=")
+    print(
+        json.dumps(
+            {
+                context_key: model_to_dict(model)
+                for context_key, model in context_models.items()
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )

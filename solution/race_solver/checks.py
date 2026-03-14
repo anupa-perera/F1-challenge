@@ -3,7 +3,12 @@ from __future__ import annotations
 """Small self-checks that protect the model's core assumptions."""
 
 from .models import RaceConfig, Stint
-from .parameters import DEFAULT_MODEL_PARAMETERS, replace_parameter
+from .parameters import (
+    DEFAULT_MODEL_PARAMETERS,
+    runtime_context_key,
+    runtime_model_for_config,
+    replace_parameter,
+)
 from .parsing import build_driver_plan
 from .scoring import (
     driver_score_breakdown,
@@ -81,6 +86,11 @@ def run_self_checks() -> None:
     assert sequence_order_emphasis(config) == 1.0
     assert abs(sequence_order_emphasis(RaceConfig("Edge", 37, 87.5, 21.0, 30)) - 0.4) < 1e-9
     assert sequence_order_emphasis(long_race) == 0.0
+    assert runtime_context_key(short_race) == "non_medium"
+    assert runtime_context_key(config) == "non_medium"
+    medium_race = RaceConfig("Medium", 45, 87.5, 21.0, 30)
+    assert runtime_context_key(medium_race) == "medium"
+    assert runtime_model_for_config(medium_race) != runtime_model_for_config(short_race)
 
     identical_plans = (
         build_driver_plan(

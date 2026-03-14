@@ -51,6 +51,9 @@ The solver is organized so each file answers one question:
 - The current wear model treats age beyond the grace window as a degradation
   state and applies a nonlinear penalty to that state, which proved much
   stronger than the earlier direct age-overage penalty.
+- Runtime now uses a deterministic context gate on `total_laps`:
+  medium-length races use a dedicated parameter set, while short and long
+  races share the strongest non-medium fit.
 
 ## Workflow
 
@@ -61,6 +64,9 @@ The solver is organized so each file answers one question:
    `--profile fast` for trying ideas cheaply,
    `--profile medium` before spending a full run,
    and `--profile full` as the only commit-worthy gate.
+   By default calibration now fits the runtime `medium` vs `non_medium`
+   parameter split; pass `--context-split global` to compare against the
+   single-model baseline.
 3. Freeze the best parameters back into `race_solver/parameters.py`.
 4. Run the solver with `python solution/race_simulator.py < input.json`.
 5. Explain a race with `python solution/explain_race.py < input.json`.

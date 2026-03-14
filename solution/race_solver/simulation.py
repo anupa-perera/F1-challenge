@@ -5,13 +5,12 @@ from __future__ import annotations
 from typing import Any
 
 from .models import ModelParameters, RaceInput
-from .parameters import DEFAULT_MODEL_PARAMETERS
 from .scoring import predict_finishing_order
 
 
 def simulate_race(
     race_input: RaceInput,
-    model: ModelParameters = DEFAULT_MODEL_PARAMETERS,
+    model: ModelParameters | None = None,
 ) -> dict[str, Any]:
     return {
         "race_id": race_input.race_id,

@@ -12,7 +12,7 @@ from .models import (
     Stint,
     StintScoreBreakdown,
 )
-from .parameters import DEFAULT_MODEL_PARAMETERS
+from .parameters import DEFAULT_MODEL_PARAMETERS, runtime_model_for_config
 
 
 def normalize_context(config: RaceConfig) -> tuple[float, float]:
@@ -118,12 +118,13 @@ def lap_penalty(
     age: int,
     lap_number: int,
     config: RaceConfig,
-    model: ModelParameters = DEFAULT_MODEL_PARAMETERS,
+    model: ModelParameters | None = None,
 ) -> float:
-    params = model.compounds[compound]
-    pace_multiplier, deg_multiplier = compound_multipliers(config, model, compound)
+    resolved_model = runtime_model_for_config(config) if model is None else model
+    params = resolved_model.compounds[compound]
+    pace_multiplier, deg_multiplier = compound_multipliers(config, resolved_model, compound)
     progress_multiplier = 1.0 + (
-        model.lap_progress_pace_scale
+        resolved_model.lap_progress_pace_scale
         * sequence_order_emphasis(config)
         * lap_progress_value(lap_number=lap_number, total_laps=config.total_laps)
     )
@@ -140,14 +141,15 @@ def lap_penalty(
 def stint_penalty_total(
     stint: Stint,
     config: RaceConfig,
-    model: ModelParameters = DEFAULT_MODEL_PARAMETERS,
+    model: ModelParameters | None = None,
 ) -> float:
     """Collapse the lap-by-lap penalty sum for a stint into a closed form."""
 
-    params = model.compounds[stint.compound]
+    resolved_model = runtime_model_for_config(config) if model is None else model
+    params = resolved_model.compounds[stint.compound]
     pace_multiplier, deg_multiplier = compound_multipliers(
         config=config,
-        model=model,
+        model=resolved_model,
         compound=stint.compound,
     )
 
@@ -157,7 +159,7 @@ def stint_penalty_total(
     progress_adjustment_total = (
         params.pace_offset
         * pace_multiplier
-        * model.lap_progress_pace_scale
+        * resolved_model.lap_progress_pace_scale
         * sequence_order_emphasis(config)
         * stint_progress_sum(stint=stint, total_laps=config.total_laps)
     )
@@ -170,14 +172,15 @@ def stint_penalty_total(
 def stint_score_breakdown(
     stint: Stint,
     config: RaceConfig,
-    model: ModelParameters = DEFAULT_MODEL_PARAMETERS,
+    model: ModelParameters | None = None,
 ) -> StintScoreBreakdown:
     """Explain how one stint contributes to the final race score."""
 
-    params = model.compounds[stint.compound]
+    resolved_model = runtime_model_for_config(config) if model is None else model
+    params = resolved_model.compounds[stint.compound]
     pace_multiplier, deg_multiplier = compound_multipliers(
         config=config,
-        model=model,
+        model=resolved_model,
         compound=stint.compound,
     )
 
@@ -185,7 +188,7 @@ def stint_score_breakdown(
     progress_adjustment_total = (
         params.pace_offset
         * pace_multiplier
-        * model.lap_progress_pace_scale
+        * resolved_model.lap_progress_pace_scale
         * sequence_order_emphasis(config)
         * stint_progress_sum(stint=stint, total_laps=config.total_laps)
     )
@@ -209,14 +212,15 @@ def stint_score_breakdown(
 def driver_score_breakdown(
     config: RaceConfig,
     driver_plan: DriverPlan,
-    model: ModelParameters = DEFAULT_MODEL_PARAMETERS,
+    model: ModelParameters | None = None,
 ) -> DriverScoreBreakdown:
     """Return the full score decomposition for a single driver."""
 
+    resolved_model = runtime_model_for_config(config) if model is None else model
     base_race_time = config.base_lap_time * config.total_laps
     pit_stop_time = config.pit_lane_time * driver_plan.stop_count
     stints = tuple(
-        stint_score_breakdown(stint=stint, config=config, model=model)
+        stint_score_breakdown(stint=stint, config=config, model=resolved_model)
         for stint in driver_plan.stints
     )
     tire_penalty_time = sum(stint.total_penalty for stint in stints)
@@ -234,7 +238,7 @@ def driver_score_breakdown(
 def driver_total_time(
     config: RaceConfig,
     driver_plan: DriverPlan,
-    model: ModelParameters = DEFAULT_MODEL_PARAMETERS,
+    model: ModelParameters | None = None,
 ) -> float:
     """Return total race time without constructing explanation objects.
 
@@ -243,10 +247,11 @@ def driver_total_time(
     available for debugging tools, but prediction only needs this scalar total.
     """
 
+    resolved_model = runtime_model_for_config(config) if model is None else model
     base_race_time = config.base_lap_time * config.total_laps
     pit_stop_time = config.pit_lane_time * driver_plan.stop_count
     tire_penalty_time = sum(
-        stint_penalty_total(stint=stint, config=config, model=model)
+        stint_penalty_total(stint=stint, config=config, model=resolved_model)
         for stint in driver_plan.stints
     )
     return base_race_time + pit_stop_time + tire_penalty_time
@@ -255,11 +260,12 @@ def driver_total_time(
 def predict_finishing_order(
     config: RaceConfig,
     driver_plans: Sequence[DriverPlan],
-    model: ModelParameters = DEFAULT_MODEL_PARAMETERS,
+    model: ModelParameters | None = None,
 ) -> list[str]:
+    resolved_model = runtime_model_for_config(config) if model is None else model
     scored_drivers = [
         (
-            driver_total_time(config=config, driver_plan=driver_plan, model=model),
+            driver_total_time(config=config, driver_plan=driver_plan, model=resolved_model),
             driver_plan.driver_id,
         )
         for driver_plan in driver_plans

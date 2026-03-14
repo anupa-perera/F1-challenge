@@ -14,7 +14,6 @@ import json
 
 from .historical_data import HistoricalRace
 from .models import DriverPlan
-from .parameters import DEFAULT_MODEL_PARAMETERS
 from .parsing import parse_race_input
 from .reporting import first_divergence
 from .scoring import predict_finishing_order
@@ -348,7 +347,6 @@ def extract_driver_residuals(
         predicted_order = predict_finishing_order(
             config=race.config,
             driver_plans=race.driver_plans,
-            model=DEFAULT_MODEL_PARAMETERS,
         )
         predicted_rank = {
             driver_id: index + 1
@@ -425,7 +423,6 @@ def summarize_pairwise_confusions(
         predicted_order = predict_finishing_order(
             config=race.config,
             driver_plans=race.driver_plans,
-            model=DEFAULT_MODEL_PARAMETERS,
         )
         predicted_rank = {
             driver_id: index

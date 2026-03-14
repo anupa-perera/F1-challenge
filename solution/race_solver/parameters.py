@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-"""Parameter definitions and guardrails for the v1 tire model."""
+"""Parameter definitions and guardrails for the deterministic tire model."""
 
 from dataclasses import replace
 
-from .models import CompoundParameters, ModelParameters
+from .models import CompoundParameters, ModelParameters, RaceConfig
 
 
-# These values are the strongest validated default so far.
-# The nonlinear wear-state curve now carries most of the ordering signal, so
-# the best full-data fit no longer needs the separate lap-progress pace tweak.
+# This is the strongest validated single-model baseline so far. Calibration
+# still starts from this global fit even when the runtime uses a context-gated
+# model, because it keeps one clean reference point for comparison.
 DEFAULT_MODEL_PARAMETERS = ModelParameters(
     compounds={
         "SOFT": CompoundParameters(
@@ -39,6 +39,71 @@ DEFAULT_MODEL_PARAMETERS = ModelParameters(
     },
     lap_progress_pace_scale=0.0,
 )
+
+
+MEDIUM_MODEL_PARAMETERS = ModelParameters(
+    compounds={
+        "SOFT": CompoundParameters(
+            pace_offset=-1.5,
+            grace_laps=4,
+            deg_rate=0.095,
+            temp_pace_scale=-0.025,
+            temp_deg_scale=0.1,
+            race_length_deg_scale=0.2,
+        ),
+        "MEDIUM": CompoundParameters(
+            pace_offset=0.5,
+            grace_laps=15,
+            deg_rate=0.05,
+            temp_pace_scale=0.15,
+            temp_deg_scale=0.1,
+            race_length_deg_scale=0.15,
+        ),
+        "HARD": CompoundParameters(
+            pace_offset=1.5,
+            grace_laps=21,
+            deg_rate=0.018,
+            temp_pace_scale=0.0,
+            temp_deg_scale=0.025,
+            race_length_deg_scale=0.2,
+        ),
+    },
+    lap_progress_pace_scale=-0.025,
+)
+
+
+NON_MEDIUM_MODEL_PARAMETERS = ModelParameters(
+    compounds={
+        **dict(DEFAULT_MODEL_PARAMETERS.compounds),
+    },
+    lap_progress_pace_scale=DEFAULT_MODEL_PARAMETERS.lap_progress_pace_scale,
+)
+
+
+def runtime_context_key(config: RaceConfig) -> str:
+    """Bucket races into the smallest context split that the data supports.
+
+    The strongest residual signal after the nonlinear wear upgrade is that
+    medium-length races still behave differently from short and long races.
+    We therefore start with one deterministic gate on total race distance
+    instead of adding multiple interacting context switches at once.
+    """
+
+    if 37 <= config.total_laps <= 52:
+        return "medium"
+    return "non_medium"
+
+
+RUNTIME_MODEL_PARAMETERS = {
+    "medium": MEDIUM_MODEL_PARAMETERS,
+    "non_medium": NON_MEDIUM_MODEL_PARAMETERS,
+}
+
+
+def runtime_model_for_config(config: RaceConfig) -> ModelParameters:
+    """Return the frozen runtime model for the race's validated context bucket."""
+
+    return RUNTIME_MODEL_PARAMETERS[runtime_context_key(config)]
 
 
 def replace_parameter(
@@ -107,4 +172,11 @@ def model_to_dict(model: ModelParameters) -> dict[str, dict[str, float | int]]:
             }
             for compound, params in model.compounds.items()
         },
+    }
+
+
+def runtime_models_to_dict() -> dict[str, dict[str, dict[str, float | int]]]:
+    return {
+        context_key: model_to_dict(model)
+        for context_key, model in RUNTIME_MODEL_PARAMETERS.items()
     }
