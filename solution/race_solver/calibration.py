@@ -622,7 +622,6 @@ def main() -> None:
     )
     all_races = load_historical_races(max_races=profile.max_races)
     training_races, validation_races = split_races(all_races)
-    sampled_training = deterministic_sample(training_races, sample_size=profile.sample_size)
 
     print(
         f"loaded {len(all_races)} races "
