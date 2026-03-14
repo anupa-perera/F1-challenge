@@ -36,6 +36,7 @@ def run_self_checks() -> None:
         track_temp=30,
     )
     fresh_stint = Stint(compound="SOFT", start_lap=1, end_lap=4, length=4)
+    worn_stint = Stint(compound="SOFT", start_lap=1, end_lap=8, length=8)
 
     # Fresh tires start at age 1 because age advances at the start of the lap.
     lap_sum = sum(
@@ -72,8 +73,8 @@ def run_self_checks() -> None:
     )
     length_model = replace_parameter(DEFAULT_MODEL_PARAMETERS, "SOFT", "temp_deg_scale", 0.0)
     length_model = replace_parameter(length_model, "SOFT", "race_length_deg_scale", 0.1)
-    short_wear = stint_score_breakdown(fresh_stint, short_race, model=length_model).wear_total
-    long_wear = stint_score_breakdown(fresh_stint, long_race, model=length_model).wear_total
+    short_wear = stint_score_breakdown(worn_stint, short_race, model=length_model).wear_total
+    long_wear = stint_score_breakdown(worn_stint, long_race, model=length_model).wear_total
     assert long_wear > short_wear
 
     assert sequence_order_emphasis(short_race) == 1.0

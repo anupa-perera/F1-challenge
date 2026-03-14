@@ -8,36 +8,36 @@ from .models import CompoundParameters, ModelParameters
 
 
 # These values are the strongest validated default so far.
-# Fresh-tire bonuses remain disabled, while the fitted model keeps a small
-# lap-progress effect because calibration found a slight ordering benefit.
+# The nonlinear wear-state curve now carries most of the ordering signal, so
+# the best full-data fit no longer needs the separate lap-progress pace tweak.
 DEFAULT_MODEL_PARAMETERS = ModelParameters(
     compounds={
         "SOFT": CompoundParameters(
-            pace_offset=-0.35,
-            grace_laps=2,
+            pace_offset=-1.5,
+            grace_laps=4,
             deg_rate=0.11,
-            temp_pace_scale=-0.025,
+            temp_pace_scale=0.075,
             temp_deg_scale=0.1,
-            race_length_deg_scale=0.05,
+            race_length_deg_scale=0.2,
         ),
         "MEDIUM": CompoundParameters(
-            pace_offset=0.25,
-            grace_laps=12,
+            pace_offset=0.2,
+            grace_laps=13,
             deg_rate=0.05,
-            temp_pace_scale=0.175,
-            temp_deg_scale=0.15,
+            temp_pace_scale=0.0,
+            temp_deg_scale=0.075,
             race_length_deg_scale=0.125,
         ),
         "HARD": CompoundParameters(
-            pace_offset=0.45,
-            grace_laps=16,
+            pace_offset=1.5,
+            grace_laps=20,
             deg_rate=0.018,
-            temp_pace_scale=0.2,
-            temp_deg_scale=-0.05,
-            race_length_deg_scale=0.2,
+            temp_pace_scale=0.0,
+            temp_deg_scale=-0.025,
+            race_length_deg_scale=0.175,
         ),
     },
-    lap_progress_pace_scale=-0.025,
+    lap_progress_pace_scale=0.0,
 )
 
 

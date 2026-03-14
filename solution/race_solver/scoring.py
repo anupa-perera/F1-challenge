@@ -88,6 +88,31 @@ def stint_progress_sum(stint: Stint, total_laps: int) -> float:
     return ((2.0 * lap_sum) - (stint.length * (total_laps + 1))) / total_laps
 
 
+def wear_overage(age: int, grace_laps: int) -> int:
+    """Return how far a tire is past its stable operating window."""
+
+    return max(0, age - grace_laps)
+
+
+def wear_penalty_units(overage_laps: int) -> float:
+    """Map degradation state to pace loss with a nonlinear response.
+
+    The current baseline charges wear directly by age overage. This experiment
+    treats age overage as a degradation state and lets lap-time loss grow
+    nonlinearly with that state. It keeps the same calibrated `deg_rate`
+    surface, but changes the structural shape we are fitting.
+    """
+
+    return float(overage_laps * overage_laps)
+
+
+def stint_wear_penalty_units(stint_length: int, grace_laps: int) -> float:
+    """Closed-form sum of squared overage terms across a stint."""
+
+    overage_laps = max(0, stint_length - grace_laps)
+    return overage_laps * (overage_laps + 1) * ((2 * overage_laps) + 1) / 6.0
+
+
 def lap_penalty(
     compound: str,
     age: int,
@@ -104,7 +129,11 @@ def lap_penalty(
     )
 
     pace_term = params.pace_offset * pace_multiplier * progress_multiplier
-    wear_term = max(0, age - params.grace_laps) * params.deg_rate * deg_multiplier
+    wear_term = (
+        wear_penalty_units(wear_overage(age, params.grace_laps))
+        * params.deg_rate
+        * deg_multiplier
+    )
     return pace_term + wear_term
 
 
@@ -133,8 +162,7 @@ def stint_penalty_total(
         * stint_progress_sum(stint=stint, total_laps=config.total_laps)
     )
     pace_total = base_pace_total + progress_adjustment_total
-    overage_laps = max(0, stint.length - params.grace_laps)
-    wear_units = overage_laps * (overage_laps + 1) / 2.0
+    wear_units = stint_wear_penalty_units(stint.length, params.grace_laps)
     wear_total = wear_units * params.deg_rate * deg_multiplier
     return pace_total + wear_total
 
@@ -162,8 +190,7 @@ def stint_score_breakdown(
         * stint_progress_sum(stint=stint, total_laps=config.total_laps)
     )
     pace_total = base_pace_total + progress_adjustment_total
-    overage_laps = max(0, stint.length - params.grace_laps)
-    wear_units = overage_laps * (overage_laps + 1) / 2.0
+    wear_units = stint_wear_penalty_units(stint.length, params.grace_laps)
     wear_total = wear_units * params.deg_rate * deg_multiplier
 
     return StintScoreBreakdown(

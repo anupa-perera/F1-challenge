@@ -48,6 +48,9 @@ The solver is organized so each file answers one question:
 - Calibration and prediction use a direct total-time scorer, while explanation
   tools still use the richer score-breakdown path for human-readable analysis.
 - The v1 scoring model uses numeric race context (`base_lap_time`, `pit_lane_time`, `track_temp`, `total_laps`) and currently ignores the `track` name because the numeric fields are what directly alter the computed score.
+- The current wear model treats age beyond the grace window as a degradation
+  state and applies a nonlinear penalty to that state, which proved much
+  stronger than the earlier direct age-overage penalty.
 
 ## Workflow
 
