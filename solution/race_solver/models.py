@@ -1,0 +1,88 @@
+from __future__ import annotations
+
+"""Immutable structures shared across parsing, scoring, and calibration.
+
+Keeping the core shapes in one place makes the rest of the code read more like
+"transform data" and less like "keep reconstructing JSON by hand".
+"""
+
+from dataclasses import dataclass
+from typing import Mapping
+
+
+COMPOUND_ORDER = ("SOFT", "MEDIUM", "HARD")
+
+
+@dataclass(frozen=True)
+class RaceConfig:
+    track: str
+    total_laps: int
+    base_lap_time: float
+    pit_lane_time: float
+    track_temp: int
+
+
+@dataclass(frozen=True)
+class Stint:
+    compound: str
+    start_lap: int
+    end_lap: int
+    length: int
+
+
+@dataclass(frozen=True)
+class DriverPlan:
+    driver_id: str
+    starting_tire: str
+    stop_count: int
+    stints: tuple[Stint, ...]
+
+
+@dataclass(frozen=True)
+class RaceInput:
+    race_id: str
+    config: RaceConfig
+    driver_plans: tuple[DriverPlan, ...]
+
+
+@dataclass(frozen=True)
+class CompoundParameters:
+    pace_offset: float
+    fresh_bonus: float
+    grace_laps: int
+    deg_rate: float
+    temp_pace_scale: float
+    base_pace_scale: float
+    temp_deg_scale: float
+    base_deg_scale: float
+
+
+@dataclass(frozen=True)
+class ModelParameters:
+    compounds: Mapping[str, CompoundParameters]
+    fresh_tire_window: int
+    lap_progress_pace_scale: float
+
+
+@dataclass(frozen=True)
+class StintScoreBreakdown:
+    compound: str
+    start_lap: int
+    end_lap: int
+    length: int
+    base_pace_total: float
+    progress_adjustment_total: float
+    fresh_bonus_total: float
+    pace_total: float
+    wear_total: float
+    total_penalty: float
+
+
+@dataclass(frozen=True)
+class DriverScoreBreakdown:
+    driver_id: str
+    base_race_time: float
+    pit_stop_time: float
+    tire_penalty_time: float
+    total_time: float
+    stints: tuple[StintScoreBreakdown, ...]

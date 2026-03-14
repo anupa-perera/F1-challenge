@@ -2,8 +2,8 @@
 # Example patterns below - uncomment and modify as needed:
 
 # Python
-# __pycache__/
-# *.pyc
+__pycache__/
+*.pyc
 # .venv/
 # venv/
 
