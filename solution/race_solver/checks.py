@@ -98,6 +98,7 @@ def run_self_checks() -> None:
 
     assert sequence_order_emphasis(short_race) == 1.0
     assert sequence_order_emphasis(config) == 1.0
+    assert abs(sequence_order_emphasis(RaceConfig("Edge", 37, 87.5, 21.0, 30)) - 0.4) < 1e-9
     assert sequence_order_emphasis(long_race) == 0.0
 
     identical_plans = (

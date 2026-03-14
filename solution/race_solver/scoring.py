@@ -55,16 +55,21 @@ def fresh_lap_count(stint_length: int, fresh_tire_window: int) -> int:
 
 
 def sequence_order_emphasis(config: RaceConfig) -> float:
-    """Increase order sensitivity for short races.
+    """Increase order sensitivity for short races with a small taper.
 
     Historical pairwise comparisons of mirrored one-stop strategies show that
     compound order matters most in short races and is close to neutral in
-    medium and long races. We therefore reuse the existing lap-progress term,
-    but only emphasize it in the short-race regime instead of adding a new
-    tunable parameter.
+    longer ones. The effect does not disappear at a hard boundary, though: it
+    is strongest around 34 laps and fades toward neutral by about 39 laps, so
+    we reuse the existing lap-progress term with a fixed taper instead of
+    adding another tunable parameter.
     """
 
-    return 1.0 if config.total_laps <= 36 else 0.0
+    if config.total_laps <= 34:
+        return 1.0
+    if config.total_laps >= 39:
+        return 0.0
+    return (39.0 - config.total_laps) / 5.0
 
 
 def lap_progress_value(lap_number: int, total_laps: int) -> float:

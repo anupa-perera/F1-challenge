@@ -94,6 +94,12 @@ class Evaluation:
         return self.pairwise_correct / self.pairwise_total
 
 
+@dataclass(frozen=True)
+class SearchResult:
+    final_model: ModelParameters
+    checkpoints: tuple[ModelParameters, ...]
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--sample-size", type=int, default=1200)
@@ -226,6 +232,18 @@ def refine_candidate_values(
     return sorted(values)
 
 
+def append_checkpoint(
+    checkpoints: list[ModelParameters],
+    seen_signatures: set[tuple[float | int, ...]],
+    model: ModelParameters,
+) -> None:
+    signature = model_signature(model)
+    if signature in seen_signatures:
+        return
+    seen_signatures.add(signature)
+    checkpoints.append(model)
+
+
 def search_sequence() -> list[tuple[str | None, str]]:
     field_order = [
         "fresh_tire_window",
@@ -252,10 +270,13 @@ def coarse_search(
     training_sample: list[HistoricalRace],
     starting_model: ModelParameters,
     coarse_passes: int,
-) -> ModelParameters:
+) -> SearchResult:
     current_model = starting_model
     cache: dict[tuple[float | int, ...], Evaluation] = {}
     current_eval = evaluate_model(training_sample, current_model, cache)
+    checkpoints: list[ModelParameters] = []
+    seen_signatures: set[tuple[float | int, ...]] = set()
+    append_checkpoint(checkpoints, seen_signatures, current_model)
 
     for pass_index in range(coarse_passes):
         for compound, field_name in search_sequence():
@@ -272,6 +293,8 @@ def coarse_search(
                     best_model = candidate_model
                     best_eval = candidate_eval
 
+            if best_model is not current_model:
+                append_checkpoint(checkpoints, seen_signatures, best_model)
             current_model = best_model
             current_eval = best_eval
 
@@ -281,17 +304,20 @@ def coarse_search(
             f"pairwise={current_eval.pairwise_rate:.4f}"
         )
 
-    return current_model
+    return SearchResult(final_model=current_model, checkpoints=tuple(checkpoints))
 
 
 def refine_search(
     full_training: list[HistoricalRace],
     starting_model: ModelParameters,
     refine_passes: int,
-) -> ModelParameters:
+) -> SearchResult:
     current_model = starting_model
     cache: dict[tuple[float | int, ...], Evaluation] = {}
     current_eval = evaluate_model(full_training, current_model, cache)
+    checkpoints: list[ModelParameters] = []
+    seen_signatures: set[tuple[float | int, ...]] = set()
+    append_checkpoint(checkpoints, seen_signatures, current_model)
 
     for pass_index in range(refine_passes):
         improved = False
@@ -318,6 +344,7 @@ def refine_search(
                 improved = True
                 current_model = best_model
                 current_eval = best_eval
+                append_checkpoint(checkpoints, seen_signatures, current_model)
 
         print(
             f"[refine pass {pass_index + 1}] "
@@ -328,7 +355,7 @@ def refine_search(
         if not improved:
             break
 
-    return current_model
+    return SearchResult(final_model=current_model, checkpoints=tuple(checkpoints))
 
 
 def print_evaluation(label: str, evaluation: Evaluation) -> None:
@@ -338,6 +365,36 @@ def print_evaluation(label: str, evaluation: Evaluation) -> None:
         f"pairwise={evaluation.pairwise_correct}/{evaluation.pairwise_total} "
         f"({evaluation.pairwise_rate:.4%})"
     )
+
+
+def select_validation_model(
+    candidates: list[ModelParameters],
+    training_races: list[HistoricalRace],
+    validation_races: list[HistoricalRace],
+) -> tuple[ModelParameters, Evaluation, Evaluation]:
+    best_model = candidates[0]
+    best_train_eval = evaluate_model(training_races, best_model, {})
+    best_validation_eval = evaluate_model(validation_races, best_model, {})
+
+    for candidate in candidates[1:]:
+        candidate_train_eval = evaluate_model(training_races, candidate, {})
+        candidate_validation_eval = evaluate_model(validation_races, candidate, {})
+        if (
+            candidate_validation_eval.exact_matches,
+            candidate_validation_eval.pairwise_correct,
+            candidate_train_eval.exact_matches,
+            candidate_train_eval.pairwise_correct,
+        ) > (
+            best_validation_eval.exact_matches,
+            best_validation_eval.pairwise_correct,
+            best_train_eval.exact_matches,
+            best_train_eval.pairwise_correct,
+        ):
+            best_model = candidate
+            best_train_eval = candidate_train_eval
+            best_validation_eval = candidate_validation_eval
+
+    return best_model, best_train_eval, best_validation_eval
 
 
 def main() -> None:
@@ -352,21 +409,33 @@ def main() -> None:
     )
     print(f"coarse search sample size: {len(sampled_training)}")
 
-    coarse_model = coarse_search(
+    coarse_result = coarse_search(
         training_sample=sampled_training,
         starting_model=DEFAULT_MODEL_PARAMETERS,
         coarse_passes=args.coarse_passes,
     )
-    best_model = refine_search(
+    refine_result = refine_search(
         full_training=training_races,
-        starting_model=coarse_model,
+        starting_model=coarse_result.final_model,
         refine_passes=args.refine_passes,
     )
+    candidate_models: list[ModelParameters] = []
+    seen_signatures: set[tuple[float | int, ...]] = set()
+    for candidate in (
+        DEFAULT_MODEL_PARAMETERS,
+        *coarse_result.checkpoints,
+        *refine_result.checkpoints,
+    ):
+        append_checkpoint(candidate_models, seen_signatures, candidate)
 
-    train_eval = evaluate_model(training_races, best_model, {})
-    validation_eval = evaluate_model(validation_races, best_model, {})
+    best_model, train_eval, validation_eval = select_validation_model(
+        candidate_models,
+        training_races=training_races,
+        validation_races=validation_races,
+    )
 
     print_evaluation("train", train_eval)
     print_evaluation("validation", validation_eval)
+    print(f"validation_selected_from={len(candidate_models)} checkpoints")
     print("best_parameters=")
     print(json.dumps(model_to_dict(best_model), indent=2, sort_keys=True))
