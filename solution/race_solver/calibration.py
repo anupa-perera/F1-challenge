@@ -294,6 +294,29 @@ def refine_candidate_values(
     return sorted(values)
 
 
+def next_directional_value(
+    current_value: float | int,
+    field_name: str,
+    compound: str | None,
+    direction: int,
+) -> float | int | None:
+    """Step one refine increment in a chosen direction, if still in bounds."""
+
+    low, high = PARAMETER_BOUNDS[field_name][compound]
+    step = REFINE_STEPS[field_name]
+
+    if field_name in {"grace_laps", "fresh_tire_window"}:
+        candidate = int(current_value) + (direction * int(step))
+        if low <= candidate <= high:
+            return candidate
+        return None
+
+    candidate = round(float(current_value) + (direction * float(step)), 6)
+    if low <= candidate <= high:
+        return candidate
+    return None
+
+
 def append_checkpoint(
     checkpoints: list[ModelParameters],
     seen_signatures: set[tuple[float | int, ...]],
@@ -391,6 +414,7 @@ def refine_search(
                 current_value = getattr(current_model.compounds[compound], field_name)
             best_model = current_model
             best_eval = current_eval
+            best_value = current_value
 
             for value in refine_candidate_values(current_value, field_name, compound):
                 candidate_model = replace_parameter(current_model, compound, field_name, value)
@@ -401,12 +425,48 @@ def refine_search(
                 if is_better(candidate_eval, best_eval, primary="exact"):
                     best_model = candidate_model
                     best_eval = candidate_eval
+                    best_value = value
 
             if best_model is not current_model:
                 improved = True
                 current_model = best_model
                 current_eval = best_eval
                 append_checkpoint(checkpoints, seen_signatures, current_model)
+
+                direction = 0
+                if float(best_value) > float(current_value):
+                    direction = 1
+                elif float(best_value) < float(current_value):
+                    direction = -1
+
+                probe_value = best_value
+                while direction != 0:
+                    next_value = next_directional_value(
+                        current_value=probe_value,
+                        field_name=field_name,
+                        compound=compound,
+                        direction=direction,
+                    )
+                    if next_value is None:
+                        break
+
+                    candidate_model = replace_parameter(
+                        current_model,
+                        compound,
+                        field_name,
+                        next_value,
+                    )
+                    if not validate_model(candidate_model):
+                        break
+
+                    candidate_eval = evaluate_model(full_training, candidate_model, cache)
+                    if not is_better(candidate_eval, current_eval, primary="exact"):
+                        break
+
+                    current_model = candidate_model
+                    current_eval = candidate_eval
+                    probe_value = next_value
+                    append_checkpoint(checkpoints, seen_signatures, current_model)
 
         print(
             f"[refine pass {pass_index + 1}] "
