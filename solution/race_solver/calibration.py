@@ -17,10 +17,9 @@ from .parameters import (
     DEFAULT_MODEL_PARAMETERS,
     model_to_dict,
     replace_parameter,
-    RUNTIME_CONTEXT_ORDER,
-    runtime_context_key,
     validate_model,
 )
+from .runtime_gate import RUNTIME_CONTEXT_ORDER, runtime_context_key
 from .scoring import predict_finishing_order
 
 

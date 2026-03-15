@@ -5,12 +5,14 @@ from __future__ import annotations
 from .models import RaceConfig, Stint
 from .parameters import (
     DEFAULT_MODEL_PARAMETERS,
-    runtime_context_key,
-    runtime_fallback_context_key,
-    runtime_model_for_config,
     replace_parameter,
 )
 from .parsing import build_driver_plan
+from .runtime_gate import (
+    runtime_context_key,
+    runtime_fallback_context_key,
+    runtime_model_for_config,
+)
 from .scoring import (
     driver_score_breakdown,
     driver_total_time,

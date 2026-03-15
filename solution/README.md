@@ -21,6 +21,8 @@ The solver is organized so each file answers one question:
   Turns challenge JSON into validated race and strategy objects.
 - `race_solver/parameters.py`
   Stores the current fitted parameters and the model guardrails.
+- `race_solver/runtime_gate.py`
+  Owns deterministic context routing and fallback relationships for runtime scoring.
 - `race_solver/scoring.py`
   Contains the actual tire penalty and total race scoring logic.
 - `race_solver/reporting.py`
@@ -43,10 +45,16 @@ The solver is organized so each file answers one question:
   - calibration: `calibrate_model.py` -> historical loader -> calibration -> frozen parameters
   - analysis: `analyze_*.py` -> analysis/reporting helpers -> readable conclusions
 - Parsing is separate from scoring, so model changes do not force JSON changes.
+- Runtime routing is separate from fitted parameter storage, so gate changes do
+  not force edits to the parameter guardrails and parameter changes do not have
+  to carry routing logic with them.
 - Calibration is separate from runtime, so the prediction path stays small.
 - Analysis stays separate from runtime, so we can explore the historical data without bloating the submission path.
 - Calibration and prediction use a direct total-time scorer, while explanation
   tools still use the richer score-breakdown path for human-readable analysis.
+- Stint math now has one shared implementation path inside the scorer, so
+  future tire-model changes do not have to be repeated once for runtime totals
+  and again for explanation output.
 - The v1 scoring model uses numeric race context (`base_lap_time`, `pit_lane_time`, `track_temp`, `total_laps`) and currently ignores the `track` name because the numeric fields are what directly alter the computed score.
 - The current wear model treats age beyond the grace window as a degradation
   state and applies a nonlinear penalty to that state, which proved much
