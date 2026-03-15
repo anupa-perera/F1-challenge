@@ -12,8 +12,8 @@ from dataclasses import dataclass
 from pathlib import Path
 import json
 
+from .evaluation import Evaluation, evaluate_races
 from .historical_data import HistoricalRace
-from .models import DriverPlan
 from .parsing import parse_race_input
 from .runtime_gate import (
     RUNTIME_CONTEXT_ORDER,
@@ -24,6 +24,14 @@ from .runtime_gate import (
 )
 from .reporting import first_divergence
 from .scoring import predict_finishing_order
+from .strategy_features import (
+    historical_context_bucket,
+    laps_bucket,
+    pit_burden_bucket,
+    strategy_family,
+    strategy_signature,
+    temp_bucket,
+)
 
 
 @dataclass(frozen=True)
@@ -159,34 +167,6 @@ DEFAULT_CROSSOVER_FAMILY_PAIRS = (
     ("MEDIUM->HARD / 1 stop", "HARD->MEDIUM / 1 stop"),
     ("SOFT->MEDIUM / 1 stop", "MEDIUM->SOFT / 1 stop"),
 )
-
-
-def temp_bucket(track_temp: int) -> str:
-    if track_temp <= 24:
-        return "cool"
-    if track_temp <= 30:
-        return "mild"
-    if track_temp <= 36:
-        return "warm"
-    return "hot"
-
-
-def laps_bucket(total_laps: int) -> str:
-    if total_laps <= 36:
-        return "short"
-    if total_laps <= 52:
-        return "medium"
-    return "long"
-
-
-def pit_burden_bucket(pit_burden: float) -> str:
-    if pit_burden <= 0.245:
-        return "low"
-    if pit_burden <= 0.255:
-        return "mid"
-    return "high"
-
-
 def extract_winner_patterns(races: list[HistoricalRace]) -> list[WinnerPattern]:
     """Reduce each race to the winning strategy features we can actually observe."""
 
@@ -277,30 +257,6 @@ def summarize_start_band_usage(
         }
         for band in START_BANDS
     }
-
-
-def strategy_signature(driver_plan: DriverPlan) -> str:
-    return "|".join(
-        f"{stint.compound}:{stint.length}"
-        for stint in driver_plan.stints
-    )
-
-
-def strategy_family(driver_plan: DriverPlan) -> str:
-    sequence = "->".join(stint.compound for stint in driver_plan.stints)
-    stop_label = "stop" if driver_plan.stop_count == 1 else "stops"
-    return f"{sequence} / {driver_plan.stop_count} {stop_label}"
-
-
-def historical_context_bucket(race: HistoricalRace) -> str:
-    pit_burden = race.config.pit_lane_time / race.config.base_lap_time
-    return (
-        f"{laps_bucket(race.config.total_laps)}|"
-        f"{temp_bucket(race.config.track_temp)}|"
-        f"{pit_burden_bucket(pit_burden)}"
-    )
-
-
 def compare_case_payload(
     case_name: str,
     payload: dict,
@@ -398,37 +354,21 @@ def compare_case_directories(
 def evaluate_races_with_model(
     races: list[HistoricalRace],
     model,
-) -> tuple[int, float]:
+) -> Evaluation:
     """Score a list of races with one model and return exact/pairwise totals.
 
     This helper exists for gate auditing: we want to ask whether a specialized
     child bucket actually beats the simpler model it would fall back to.
     """
 
-    exact_matches = 0
-    pairwise_correct = 0
-
-    for race in races:
-        predicted_order = predict_finishing_order(
+    return evaluate_races(
+        races,
+        predictor=lambda race: predict_finishing_order(
             config=race.config,
             driver_plans=race.driver_plans,
             model=model,
-        )
-        if tuple(predicted_order) == race.actual_order:
-            exact_matches += 1
-
-        predicted_rank = {
-            driver_id: index
-            for index, driver_id in enumerate(predicted_order)
-        }
-        for index, left_driver in enumerate(race.actual_order):
-            for right_driver in race.actual_order[index + 1 :]:
-                if predicted_rank[left_driver] < predicted_rank[right_driver]:
-                    pairwise_correct += 1
-
-    pairwise_total = len(races) * 190
-    pairwise_rate = 0.0 if pairwise_total == 0 else pairwise_correct / pairwise_total
-    return exact_matches, pairwise_rate
+        ),
+    )
 
 
 def summarize_runtime_bucket_value(
@@ -449,12 +389,12 @@ def summarize_runtime_bucket_value(
         context_races = grouped_races[context_key]
         if not context_races:
             continue
-        exact_matches, pairwise_rate = evaluate_races_with_model(
+        evaluation = evaluate_races_with_model(
             context_races,
             RUNTIME_MODEL_PARAMETERS[context_key],
         )
         fallback_context_key = runtime_fallback_context_key(context_key)
-        fallback_exact_matches, fallback_pairwise_rate = evaluate_races_with_model(
+        fallback_evaluation = evaluate_races_with_model(
             context_races,
             runtime_fallback_model_for_context_key(context_key),
         )
@@ -463,10 +403,10 @@ def summarize_runtime_bucket_value(
                 context_key=context_key,
                 fallback_context_key=fallback_context_key,
                 race_count=len(context_races),
-                exact_matches=exact_matches,
-                fallback_exact_matches=fallback_exact_matches,
-                pairwise_rate=pairwise_rate,
-                fallback_pairwise_rate=fallback_pairwise_rate,
+                exact_matches=evaluation.exact_matches,
+                fallback_exact_matches=fallback_evaluation.exact_matches,
+                pairwise_rate=evaluation.pairwise_rate,
+                fallback_pairwise_rate=fallback_evaluation.pairwise_rate,
             )
         )
 

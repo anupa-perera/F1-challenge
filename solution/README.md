@@ -29,6 +29,10 @@ The solver is organized so each file answers one question:
   Formats solver output into readable conclusions for debugging and review.
 - `race_solver/analysis.py`
   Builds reusable case, suite, and historical-pattern summaries from labeled data.
+- `race_solver/evaluation.py`
+  Centralizes exact-order and pairwise evaluation so calibration and analysis use the same metric logic.
+- `race_solver/strategy_features.py`
+  Holds reusable strategy signatures and simple historical context bucketing helpers.
 - `race_solver/simulation.py`
   Builds the final challenge output from parsed race input.
 - `race_solver/historical_data.py`
@@ -48,6 +52,8 @@ The solver is organized so each file answers one question:
 - Runtime routing is separate from fitted parameter storage, so gate changes do
   not force edits to the parameter guardrails and parameter changes do not have
   to carry routing logic with them.
+- Evaluation is separate from both calibration and analysis, so the definition
+  of "good prediction" stays consistent across fitting and diagnostics.
 - Calibration is separate from runtime, so the prediction path stays small.
 - Analysis stays separate from runtime, so we can explore the historical data without bloating the submission path.
 - Calibration and prediction use a direct total-time scorer, while explanation

@@ -8,16 +8,14 @@ import argparse
 from race_solver.analysis import (
     DEFAULT_CROSSOVER_FAMILY_PAIRS,
     extract_winner_patterns,
-    laps_bucket,
-    pit_burden_bucket,
     summarize_runtime_bucket_value,
     summarize_strategy_crossovers,
     summarize_historical_residuals,
     summarize_start_band_usage,
     summarize_winner_patterns,
-    temp_bucket,
 )
 from race_solver.historical_data import load_historical_races, split_races
+from race_solver.strategy_features import laps_bucket, pit_burden_bucket, temp_bucket
 
 
 def parse_args() -> argparse.Namespace:

@@ -6,6 +6,7 @@ import argparse
 import json
 from dataclasses import dataclass
 
+from .evaluation import Evaluation, evaluate_races
 from .historical_data import (
     HistoricalRace,
     deterministic_sample,
@@ -22,8 +23,6 @@ from .parameters import (
 from .runtime_gate import RUNTIME_CONTEXT_ORDER, runtime_context_key
 from .scoring import predict_finishing_order
 
-
-PAIRWISE_COMPARISONS_PER_RACE = 190
 PARAMETER_BOUNDS = {
     "pace_offset": {
         "SOFT": (-1.5, 0.0),
@@ -66,28 +65,6 @@ REFINE_STEPS = {
     "lap_progress_pace_scale": 0.025,
     "post_stop_opening_bias_scale": 0.025,
 }
-
-
-@dataclass(frozen=True)
-class Evaluation:
-    exact_matches: int
-    race_count: int
-    pairwise_correct: int
-    pairwise_total: int
-
-    @property
-    def exact_rate(self) -> float:
-        if self.race_count == 0:
-            return 0.0
-        return self.exact_matches / self.race_count
-
-    @property
-    def pairwise_rate(self) -> float:
-        if self.pairwise_total == 0:
-            return 0.0
-        return self.pairwise_correct / self.pairwise_total
-
-
 @dataclass(frozen=True)
 class SearchResult:
     final_model: ModelParameters
@@ -209,30 +186,13 @@ def evaluate_model(
     if cached is not None:
         return cached
 
-    exact_matches = 0
-    pairwise_correct = 0
-
-    for race in races:
-        predicted = predict_finishing_order(
+    evaluation = evaluate_races(
+        races,
+        predictor=lambda race: predict_finishing_order(
             config=race.config,
             driver_plans=race.driver_plans,
             model=model,
-        )
-        if tuple(predicted) == race.actual_order:
-            exact_matches += 1
-
-        predicted_rank = {driver_id: index for index, driver_id in enumerate(predicted)}
-        for index, left_driver in enumerate(race.actual_order):
-            left_rank = predicted_rank[left_driver]
-            for right_driver in race.actual_order[index + 1 :]:
-                if left_rank < predicted_rank[right_driver]:
-                    pairwise_correct += 1
-
-    evaluation = Evaluation(
-        exact_matches=exact_matches,
-        race_count=len(races),
-        pairwise_correct=pairwise_correct,
-        pairwise_total=len(races) * PAIRWISE_COMPARISONS_PER_RACE,
+        ),
     )
     cache[signature] = evaluation
     return evaluation
@@ -585,31 +545,13 @@ def evaluate_context_models(
     races: list[HistoricalRace],
     models_by_context: dict[str, ModelParameters],
 ) -> Evaluation:
-    exact_matches = 0
-    pairwise_correct = 0
-
-    for race in races:
-        model = models_by_context[runtime_context_key(race.config)]
-        predicted = predict_finishing_order(
+    return evaluate_races(
+        races,
+        predictor=lambda race: predict_finishing_order(
             config=race.config,
             driver_plans=race.driver_plans,
-            model=model,
-        )
-        if tuple(predicted) == race.actual_order:
-            exact_matches += 1
-
-        predicted_rank = {driver_id: index for index, driver_id in enumerate(predicted)}
-        for index, left_driver in enumerate(race.actual_order):
-            left_rank = predicted_rank[left_driver]
-            for right_driver in race.actual_order[index + 1 :]:
-                if left_rank < predicted_rank[right_driver]:
-                    pairwise_correct += 1
-
-    return Evaluation(
-        exact_matches=exact_matches,
-        race_count=len(races),
-        pairwise_correct=pairwise_correct,
-        pairwise_total=len(races) * PAIRWISE_COMPARISONS_PER_RACE,
+            model=models_by_context[runtime_context_key(race.config)],
+        ),
     )
 
 
