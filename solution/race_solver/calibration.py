@@ -21,7 +21,11 @@ from .parameters import (
     replace_parameter,
     validate_model,
 )
-from .runtime_gate import RUNTIME_CONTEXT_ORDER, runtime_context_key
+from .runtime_gate import (
+    RUNTIME_CONTEXT_ORDER,
+    RUNTIME_MODEL_PARAMETERS,
+    runtime_context_key,
+)
 from .scoring import predict_finishing_order
 
 PARAMETER_BOUNDS = {
@@ -621,7 +625,7 @@ def main() -> None:
             training_races=training_by_context[context_key],
             validation_races=validation_by_context[context_key],
             profile=profile,
-            starting_model=DEFAULT_MODEL_PARAMETERS,
+            starting_model=RUNTIME_MODEL_PARAMETERS[context_key],
         )
         context_models[context_key] = fit_result.model
         print_evaluation(f"{context_key} train", fit_result.train_evaluation)

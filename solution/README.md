@@ -95,6 +95,9 @@ The solver is organized so each file answers one question:
    By default calibration now fits the current runtime five-way split
    (`short_non_medium`, `short_warm`, `medium_high_pit`,
    `medium_cool_slow_cool`, `long_non_medium`).
+   Each active runtime leaf now starts from its currently frozen leaf model
+   instead of restarting from the global baseline, so fitting improves the live
+   gate we actually ship rather than relearning those leaves from scratch.
    Pass `--context-split global` to compare against the single-model baseline,
    or `--context-split learned_tree` to search for a new compact routing tree
    over the current expert model catalog.
