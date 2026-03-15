@@ -2,7 +2,7 @@ from __future__ import annotations
 
 """Small self-checks that protect the model's core assumptions."""
 
-from .models import RaceConfig, Stint
+from .models import NONLINEAR_WEAR_SCORER_FAMILY, RaceConfig, Stint
 from .parameters import (
     DEFAULT_MODEL_PARAMETERS,
     runtime_parent_context_key,
@@ -16,6 +16,7 @@ from .scoring import (
     driver_total_time,
     lap_penalty,
     predict_finishing_order,
+    resolve_scoring_family,
     sequence_order_emphasis,
     stint_penalty_total,
     stint_score_breakdown,
@@ -59,6 +60,8 @@ def run_self_checks() -> None:
         driver_total_time(config, driver_plan)
         - driver_score_breakdown(config, driver_plan).total_time
     ) < 1e-9
+    assert DEFAULT_MODEL_PARAMETERS.scorer_family == NONLINEAR_WEAR_SCORER_FAMILY
+    assert resolve_scoring_family(DEFAULT_MODEL_PARAMETERS).family_key == NONLINEAR_WEAR_SCORER_FAMILY
     restart_bias_model = replace_parameter(
         DEFAULT_MODEL_PARAMETERS,
         None,

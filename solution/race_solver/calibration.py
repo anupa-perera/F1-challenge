@@ -138,6 +138,8 @@ PROFILE_DEFAULTS = {
     ),
 }
 
+ModelSignatureValue = str | float | int
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -183,8 +185,9 @@ def resolve_profile(args: argparse.Namespace) -> CalibrationProfile:
     )
 
 
-def model_signature(model: ModelParameters) -> tuple[float | int, ...]:
-    signature: list[float | int] = [
+def model_signature(model: ModelParameters) -> tuple[ModelSignatureValue, ...]:
+    signature: list[ModelSignatureValue] = [
+        model.scorer_family,
         round(model.lap_progress_pace_scale, 6),
         round(model.post_stop_opening_bias_scale, 6),
     ]
@@ -206,7 +209,7 @@ def model_signature(model: ModelParameters) -> tuple[float | int, ...]:
 def evaluate_model(
     races: list[HistoricalRace],
     model: ModelParameters,
-    cache: dict[tuple[float | int, ...], Evaluation],
+    cache: dict[tuple[ModelSignatureValue, ...], Evaluation],
 ) -> Evaluation:
     signature = model_signature(model)
     cached = cache.get(signature)
@@ -330,7 +333,7 @@ def next_directional_value(
 
 def append_checkpoint(
     checkpoints: list[ModelParameters],
-    seen_signatures: set[tuple[float | int, ...]],
+    seen_signatures: set[tuple[ModelSignatureValue, ...]],
     model: ModelParameters,
 ) -> None:
     signature = model_signature(model)
@@ -367,10 +370,10 @@ def coarse_search(
     coarse_passes: int,
 ) -> SearchResult:
     current_model = starting_model
-    cache: dict[tuple[float | int, ...], Evaluation] = {}
+    cache: dict[tuple[ModelSignatureValue, ...], Evaluation] = {}
     current_eval = evaluate_model(training_sample, current_model, cache)
     checkpoints: list[ModelParameters] = []
-    seen_signatures: set[tuple[float | int, ...]] = set()
+    seen_signatures: set[tuple[ModelSignatureValue, ...]] = set()
     append_checkpoint(checkpoints, seen_signatures, current_model)
 
     for pass_index in range(coarse_passes):
@@ -408,10 +411,10 @@ def refine_search(
     refine_passes: int,
 ) -> SearchResult:
     current_model = starting_model
-    cache: dict[tuple[float | int, ...], Evaluation] = {}
+    cache: dict[tuple[ModelSignatureValue, ...], Evaluation] = {}
     current_eval = evaluate_model(full_training, current_model, cache)
     checkpoints: list[ModelParameters] = []
-    seen_signatures: set[tuple[float | int, ...]] = set()
+    seen_signatures: set[tuple[ModelSignatureValue, ...]] = set()
     append_checkpoint(checkpoints, seen_signatures, current_model)
 
     for pass_index in range(refine_passes):
@@ -504,8 +507,8 @@ def select_validation_model(
     training_races: list[HistoricalRace],
     validation_races: list[HistoricalRace],
 ) -> tuple[ModelParameters, Evaluation, Evaluation]:
-    training_cache: dict[tuple[float | int, ...], Evaluation] = {}
-    validation_cache: dict[tuple[float | int, ...], Evaluation] = {}
+    training_cache: dict[tuple[ModelSignatureValue, ...], Evaluation] = {}
+    validation_cache: dict[tuple[ModelSignatureValue, ...], Evaluation] = {}
     best_model = candidates[0]
     best_train_eval = evaluate_model(training_races, best_model, training_cache)
     best_validation_eval = evaluate_model(validation_races, best_model, validation_cache)
@@ -555,7 +558,7 @@ def fit_best_model(
         refine_passes=profile.refine_passes,
     )
     candidate_models: list[ModelParameters] = []
-    seen_signatures: set[tuple[float | int, ...]] = set()
+    seen_signatures: set[tuple[ModelSignatureValue, ...]] = set()
     for candidate in (
         starting_model,
         *coarse_result.checkpoints,

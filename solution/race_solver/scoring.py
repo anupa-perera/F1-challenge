@@ -2,17 +2,47 @@ from __future__ import annotations
 
 """Score race strategies using the current deterministic tire model."""
 
-from typing import Sequence
+from dataclasses import dataclass
+from typing import Callable, Sequence
 
 from .models import (
     DriverPlan,
     DriverScoreBreakdown,
     ModelParameters,
+    NONLINEAR_WEAR_SCORER_FAMILY,
     RaceConfig,
     Stint,
     StintScoreBreakdown,
 )
 from .parameters import DEFAULT_MODEL_PARAMETERS, runtime_model_for_config
+
+
+@dataclass(frozen=True)
+class ScoringFamily:
+    """Bundle one tire-law family behind a stable scoring interface.
+
+    Runtime, calibration, and explanation all need the same three operations:
+    lap cost, closed-form stint cost, and human-readable stint breakdown.
+    Registering them here lets us change the tire law without rewriting the
+    rest of the pipeline each time.
+    """
+
+    family_key: str
+    lap_penalty_fn: Callable[[str, int, int, RaceConfig, ModelParameters], float]
+    stint_penalty_total_fn: Callable[[Stint, RaceConfig, ModelParameters], float]
+    stint_score_breakdown_fn: Callable[
+        [Stint, RaceConfig, ModelParameters],
+        StintScoreBreakdown,
+    ]
+
+
+def resolve_scoring_family(model: ModelParameters) -> ScoringFamily:
+    """Return the scorer implementation named by the frozen model."""
+
+    try:
+        return SCORING_FAMILIES[model.scorer_family]
+    except KeyError as exc:
+        raise ValueError(f"unknown scorer family: {model.scorer_family}") from exc
 
 
 def normalize_context(config: RaceConfig) -> tuple[float, float]:
@@ -142,18 +172,17 @@ def stint_wear_penalty_units(stint_length: int, grace_laps: int) -> float:
     return overage_laps * (overage_laps + 1) * ((2 * overage_laps) + 1) / 6.0
 
 
-def lap_penalty(
+def _nonlinear_wear_lap_penalty(
     compound: str,
     age: int,
     lap_number: int,
     config: RaceConfig,
-    model: ModelParameters | None = None,
+    model: ModelParameters,
 ) -> float:
-    resolved_model = runtime_model_for_config(config) if model is None else model
-    params = resolved_model.compounds[compound]
-    pace_multiplier, deg_multiplier = compound_multipliers(config, resolved_model, compound)
+    params = model.compounds[compound]
+    pace_multiplier, deg_multiplier = compound_multipliers(config, model, compound)
     progress_multiplier = 1.0 + (
-        resolved_model.lap_progress_pace_scale
+        model.lap_progress_pace_scale
         * sequence_order_emphasis(config)
         * lap_progress_value(lap_number=lap_number, total_laps=config.total_laps)
     )
@@ -162,7 +191,7 @@ def lap_penalty(
         opening_bias_total = (
             params.pace_offset
             * pace_multiplier
-            * resolved_model.post_stop_opening_bias_scale
+            * model.post_stop_opening_bias_scale
             * opening_bias_units(age=age, grace_laps=params.grace_laps)
         )
 
@@ -175,18 +204,17 @@ def lap_penalty(
     return pace_term + opening_bias_total + wear_term
 
 
-def stint_penalty_total(
+def _nonlinear_wear_stint_penalty_total(
     stint: Stint,
     config: RaceConfig,
-    model: ModelParameters | None = None,
+    model: ModelParameters,
 ) -> float:
     """Collapse the lap-by-lap penalty sum for a stint into a closed form."""
 
-    resolved_model = runtime_model_for_config(config) if model is None else model
-    params = resolved_model.compounds[stint.compound]
+    params = model.compounds[stint.compound]
     pace_multiplier, deg_multiplier = compound_multipliers(
         config=config,
-        model=resolved_model,
+        model=model,
         compound=stint.compound,
     )
 
@@ -196,7 +224,7 @@ def stint_penalty_total(
     progress_adjustment_total = (
         params.pace_offset
         * pace_multiplier
-        * resolved_model.lap_progress_pace_scale
+        * model.lap_progress_pace_scale
         * sequence_order_emphasis(config)
         * stint_progress_sum(stint=stint, total_laps=config.total_laps)
     )
@@ -205,7 +233,7 @@ def stint_penalty_total(
         opening_bias_total = (
             params.pace_offset
             * pace_multiplier
-            * resolved_model.post_stop_opening_bias_scale
+            * model.post_stop_opening_bias_scale
             * stint_opening_bias_units(stint.length, params.grace_laps)
         )
     pace_total = base_pace_total + progress_adjustment_total + opening_bias_total
@@ -214,18 +242,17 @@ def stint_penalty_total(
     return pace_total + wear_total
 
 
-def stint_score_breakdown(
+def _nonlinear_wear_stint_score_breakdown(
     stint: Stint,
     config: RaceConfig,
-    model: ModelParameters | None = None,
+    model: ModelParameters,
 ) -> StintScoreBreakdown:
     """Explain how one stint contributes to the final race score."""
 
-    resolved_model = runtime_model_for_config(config) if model is None else model
-    params = resolved_model.compounds[stint.compound]
+    params = model.compounds[stint.compound]
     pace_multiplier, deg_multiplier = compound_multipliers(
         config=config,
-        model=resolved_model,
+        model=model,
         compound=stint.compound,
     )
 
@@ -233,7 +260,7 @@ def stint_score_breakdown(
     progress_adjustment_total = (
         params.pace_offset
         * pace_multiplier
-        * resolved_model.lap_progress_pace_scale
+        * model.lap_progress_pace_scale
         * sequence_order_emphasis(config)
         * stint_progress_sum(stint=stint, total_laps=config.total_laps)
     )
@@ -242,7 +269,7 @@ def stint_score_breakdown(
         opening_bias_total = (
             params.pace_offset
             * pace_multiplier
-            * resolved_model.post_stop_opening_bias_scale
+            * model.post_stop_opening_bias_scale
             * stint_opening_bias_units(stint.length, params.grace_laps)
         )
     pace_total = base_pace_total + progress_adjustment_total + opening_bias_total
@@ -261,6 +288,48 @@ def stint_score_breakdown(
         wear_total=wear_total,
         total_penalty=pace_total + wear_total,
     )
+
+
+SCORING_FAMILIES = {
+    NONLINEAR_WEAR_SCORER_FAMILY: ScoringFamily(
+        family_key=NONLINEAR_WEAR_SCORER_FAMILY,
+        lap_penalty_fn=_nonlinear_wear_lap_penalty,
+        stint_penalty_total_fn=_nonlinear_wear_stint_penalty_total,
+        stint_score_breakdown_fn=_nonlinear_wear_stint_score_breakdown,
+    )
+}
+
+
+def lap_penalty(
+    compound: str,
+    age: int,
+    lap_number: int,
+    config: RaceConfig,
+    model: ModelParameters | None = None,
+) -> float:
+    resolved_model = runtime_model_for_config(config) if model is None else model
+    family = resolve_scoring_family(resolved_model)
+    return family.lap_penalty_fn(compound, age, lap_number, config, resolved_model)
+
+
+def stint_penalty_total(
+    stint: Stint,
+    config: RaceConfig,
+    model: ModelParameters | None = None,
+) -> float:
+    resolved_model = runtime_model_for_config(config) if model is None else model
+    family = resolve_scoring_family(resolved_model)
+    return family.stint_penalty_total_fn(stint, config, resolved_model)
+
+
+def stint_score_breakdown(
+    stint: Stint,
+    config: RaceConfig,
+    model: ModelParameters | None = None,
+) -> StintScoreBreakdown:
+    resolved_model = runtime_model_for_config(config) if model is None else model
+    family = resolve_scoring_family(resolved_model)
+    return family.stint_score_breakdown_fn(stint, config, resolved_model)
 
 
 def driver_score_breakdown(

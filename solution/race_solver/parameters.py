@@ -729,6 +729,7 @@ def replace_parameter(
         },
         lap_progress_pace_scale=model.lap_progress_pace_scale,
         post_stop_opening_bias_scale=model.post_stop_opening_bias_scale,
+        scorer_family=model.scorer_family,
     )
 
 
@@ -761,9 +762,10 @@ def validate_model(model: ModelParameters) -> bool:
     return True
 
 
-def model_to_dict(model: ModelParameters) -> dict[str, dict[str, float | int]]:
+def model_to_dict(model: ModelParameters) -> dict[str, dict[str, str | float | int]]:
     return {
         "globals": {
+            "scorer_family": model.scorer_family,
             "lap_progress_pace_scale": model.lap_progress_pace_scale,
             "post_stop_opening_bias_scale": model.post_stop_opening_bias_scale,
         },
@@ -781,7 +783,7 @@ def model_to_dict(model: ModelParameters) -> dict[str, dict[str, float | int]]:
     }
 
 
-def runtime_models_to_dict() -> dict[str, dict[str, dict[str, float | int]]]:
+def runtime_models_to_dict() -> dict[str, dict[str, dict[str, str | float | int]]]:
     return {
         context_key: model_to_dict(model)
         for context_key, model in RUNTIME_MODEL_PARAMETERS.items()
