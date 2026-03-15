@@ -70,10 +70,13 @@ The solver is organized so each file answers one question:
 - The scorer now also applies a calibrated post-stop opening bias:
   restart stints can have a different early-lap pace shape than the opening
   stint, and the fitter learns one global scale for that effect per runtime
-  bucket instead of hard-coding a new family of per-compound bonuses. The live
-  profile is now intentionally short and front-loaded: the restart effect only
-  spans the first two laps of a stint instead of fading across the whole grace
-  window.
+  bucket instead of hard-coding a new family of free parameters. The live
+  profile is now both short and compound-aware:
+  - `SOFT` gets the quickest restart effect
+  - `MEDIUM` keeps a short two-lap profile
+  - `HARD` carries a slightly longer warm-up penalty
+  That keeps the mechanism compact while pricing restarted durable stints more
+  realistically than one shared generic opening shape.
 - Runtime now uses a learned, pruned deterministic gate tree over the existing
   expert model catalog instead of a hand-grown bucket list. The frozen runtime
   tree is intentionally small:

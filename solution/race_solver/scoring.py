@@ -122,30 +122,44 @@ def is_post_stop_stint(*, start_lap: int) -> bool:
     return start_lap > 1
 
 
-def opening_bias_units(age: int, grace_laps: int) -> float:
-    """Apply a short fixed restart opening shape.
+def restart_opening_profile(compound: str) -> tuple[float, ...]:
+    """Return the fixed restart opening shape for each compound.
 
-    Historical residuals now point to restarted stints being too attractive for
-    too long, especially when a later fast compound closes the race. A compact
-    two-lap opening shape keeps the same single global restart scale, but makes
-    the effect front-loaded instead of stretching across the whole grace window.
+    The live model already learned that restarted stints should not receive a
+    long generic "fresh tire" boost. The next structural refinement is to make
+    that short opening shape compound-aware:
+
+    - SOFT gets the quickest benefit, but only for a very short window.
+    - MEDIUM keeps the current two-lap shape.
+    - HARD warms up more slowly, so its restart penalty lasts slightly longer.
+
+    This keeps one global restart scale while letting the scorer distinguish
+    late-race durable restarts from fast-closing soft stints.
     """
 
-    if age == 1:
-        return 1.0
-    if age == 2:
-        return 0.5
-    return 0.0
+    if compound == "SOFT":
+        return (1.0, 0.25)
+    if compound == "HARD":
+        return (1.0, 0.75, 0.25)
+    return (1.0, 0.5)
 
 
-def stint_opening_bias_units(stint_length: int, grace_laps: int) -> float:
-    """Closed-form sum of the fixed two-lap restart opening profile."""
+def opening_bias_units(compound: str, age: int) -> float:
+    """Return one lap of the fixed restart opening profile."""
+
+    profile = restart_opening_profile(compound)
+    if age <= 0 or age > len(profile):
+        return 0.0
+    return profile[age - 1]
+
+
+def stint_opening_bias_units(compound: str, stint_length: int) -> float:
+    """Closed-form sum of the compound-specific restart opening profile."""
 
     if stint_length <= 0:
         return 0.0
-    if stint_length == 1:
-        return 1.0
-    return 1.5
+    profile = restart_opening_profile(compound)
+    return float(sum(profile[:stint_length]))
 
 
 def wear_overage(age: int, grace_laps: int) -> int:
@@ -194,7 +208,7 @@ def lap_penalty(
             params.pace_offset
             * pace_multiplier
             * resolved_model.post_stop_opening_bias_scale
-            * opening_bias_units(age=age, grace_laps=params.grace_laps)
+            * opening_bias_units(compound=compound, age=age)
         )
 
     pace_term = params.pace_offset * pace_multiplier * progress_multiplier
@@ -232,7 +246,7 @@ def _stint_penalty_components(
             params.pace_offset
             * pace_multiplier
             * model.post_stop_opening_bias_scale
-            * stint_opening_bias_units(stint.length, params.grace_laps)
+            * stint_opening_bias_units(stint.compound, stint.length)
         )
     wear_total = (
         stint_wear_penalty_units(stint.length, params.grace_laps)
