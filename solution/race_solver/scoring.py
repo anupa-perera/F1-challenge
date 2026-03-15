@@ -123,26 +123,29 @@ def is_post_stop_stint(*, start_lap: int) -> bool:
 
 
 def opening_bias_units(age: int, grace_laps: int) -> float:
-    """Fade a restart opening effect across the tire's stable window.
+    """Apply a short fixed restart opening shape.
 
-    The most plausible scorer-side gap left in the model is that restart stints
-    may not have the same early-lap shape as the opening stint. We reuse the
-    existing grace window as the duration of that opening shape so calibration
-    only has to learn one new global scale instead of a new family of timers.
+    Historical residuals now point to restarted stints being too attractive for
+    too long, especially when a later fast compound closes the race. A compact
+    two-lap opening shape keeps the same single global restart scale, but makes
+    the effect front-loaded instead of stretching across the whole grace window.
     """
 
-    if grace_laps <= 0 or age > grace_laps:
-        return 0.0
-    return (grace_laps + 1 - age) / grace_laps
+    if age == 1:
+        return 1.0
+    if age == 2:
+        return 0.5
+    return 0.0
 
 
 def stint_opening_bias_units(stint_length: int, grace_laps: int) -> float:
-    """Closed-form sum of restart opening units across a stint."""
+    """Closed-form sum of the fixed two-lap restart opening profile."""
 
-    if grace_laps <= 0:
+    if stint_length <= 0:
         return 0.0
-    opening_laps = min(stint_length, grace_laps)
-    return (opening_laps * ((2 * grace_laps) + 1 - opening_laps)) / (2.0 * grace_laps)
+    if stint_length == 1:
+        return 1.0
+    return 1.5
 
 
 def wear_overage(age: int, grace_laps: int) -> int:

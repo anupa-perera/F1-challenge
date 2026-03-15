@@ -70,7 +70,10 @@ The solver is organized so each file answers one question:
 - The scorer now also applies a calibrated post-stop opening bias:
   restart stints can have a different early-lap pace shape than the opening
   stint, and the fitter learns one global scale for that effect per runtime
-  bucket instead of hard-coding a new family of per-compound bonuses.
+  bucket instead of hard-coding a new family of per-compound bonuses. The live
+  profile is now intentionally short and front-loaded: the restart effect only
+  spans the first two laps of a stint instead of fading across the whole grace
+  window.
 - Runtime now uses a learned, pruned deterministic gate tree over the existing
   expert model catalog instead of a hand-grown bucket list. The frozen runtime
   tree is intentionally small:
@@ -95,7 +98,7 @@ The solver is organized so each file answers one question:
    `--profile fast` for trying ideas cheaply,
    `--profile medium` before spending a full run,
    and `--profile full` as the only commit-worthy gate.
-   By default calibration now fits the current runtime seven-way split
+   By default calibration now fits the current runtime eight-way split
    (`short_non_medium`, `short_warm`, `short_cool_mild`,
    `medium_high_pit_cool`, `medium_high_pit`, `medium_high_pit_hot`,
    `medium_cool_slow_cool`, `long_non_medium`).

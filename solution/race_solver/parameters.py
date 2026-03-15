@@ -102,7 +102,7 @@ MEDIUM_COOL_SLOW_COOL_MODEL_PARAMETERS = ModelParameters(
         ),
     },
     lap_progress_pace_scale=0.0,
-    post_stop_opening_bias_scale=0.15,
+    post_stop_opening_bias_scale=0.5,
 )
 
 
@@ -208,7 +208,7 @@ MEDIUM_HIGH_PIT_HOT_MODEL_PARAMETERS = ModelParameters(
             pace_offset=-0.9,
             grace_laps=5,
             deg_rate=0.11,
-            temp_pace_scale=-0.1,
+            temp_pace_scale=0.0,
             temp_deg_scale=0.0,
             race_length_deg_scale=0.1,
         ),
@@ -216,9 +216,9 @@ MEDIUM_HIGH_PIT_HOT_MODEL_PARAMETERS = ModelParameters(
             pace_offset=0.7,
             grace_laps=15,
             deg_rate=0.05,
-            temp_pace_scale=0.15,
+            temp_pace_scale=0.125,
             temp_deg_scale=-0.05,
-            race_length_deg_scale=0.1,
+            race_length_deg_scale=0.075,
         ),
         "HARD": CompoundParameters(
             pace_offset=1.55,
@@ -226,11 +226,11 @@ MEDIUM_HIGH_PIT_HOT_MODEL_PARAMETERS = ModelParameters(
             deg_rate=0.018,
             temp_pace_scale=-0.05,
             temp_deg_scale=-0.1,
-            race_length_deg_scale=0.1,
+            race_length_deg_scale=0.05,
         ),
     },
     lap_progress_pace_scale=0.0,
-    post_stop_opening_bias_scale=0.05,
+    post_stop_opening_bias_scale=0.1,
 )
 
 
@@ -478,7 +478,7 @@ SHORT_COOL_MILD_MODEL_PARAMETERS = ModelParameters(
         ),
         "HARD": CompoundParameters(
             pace_offset=1.5,
-            grace_laps=24,
+            grace_laps=23,
             deg_rate=0.005,
             temp_pace_scale=-0.0,
             temp_deg_scale=-0.2,
@@ -517,8 +517,8 @@ SHORT_WARM_MODEL_PARAMETERS = ModelParameters(
             race_length_deg_scale=0.2,
         ),
     },
-    lap_progress_pace_scale=0.025,
-    post_stop_opening_bias_scale=-0.025,
+    lap_progress_pace_scale=0.0,
+    post_stop_opening_bias_scale=0.05,
 )
 
 LONG_NON_MEDIUM_MODEL_PARAMETERS = ModelParameters(
@@ -549,7 +549,7 @@ LONG_NON_MEDIUM_MODEL_PARAMETERS = ModelParameters(
         ),
     },
     lap_progress_pace_scale=0.0,
-    post_stop_opening_bias_scale=0.025,
+    post_stop_opening_bias_scale=0.1,
 )
 
 
