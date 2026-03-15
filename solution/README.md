@@ -78,6 +78,7 @@ The solver is organized so each file answers one question:
   - short warm races route to `short_warm`
   - short shoulder races route to `short_cool_mild`
   - the main medium-long band routes to `medium_high_pit`
+  - hotter medium-long races route to `medium_high_pit_hot`
   - cooler long-shoulder races route to `medium_cool_slow_cool`
   - the remaining longest races route to `long_non_medium`
 - That tree is still fully deterministic and readable, but it is simpler than
@@ -93,9 +94,10 @@ The solver is organized so each file answers one question:
    `--profile fast` for trying ideas cheaply,
    `--profile medium` before spending a full run,
    and `--profile full` as the only commit-worthy gate.
-   By default calibration now fits the current runtime six-way split
+   By default calibration now fits the current runtime seven-way split
    (`short_non_medium`, `short_warm`, `short_cool_mild`,
-   `medium_high_pit`, `medium_cool_slow_cool`, `long_non_medium`).
+   `medium_high_pit`, `medium_high_pit_hot`,
+   `medium_cool_slow_cool`, `long_non_medium`).
    Each active runtime leaf now starts from its currently frozen leaf model
    instead of restarting from the global baseline, so fitting improves the live
    gate we actually ship rather than relearning those leaves from scratch.

@@ -110,22 +110,26 @@ def run_self_checks() -> None:
     short_warm_race = RaceConfig("ShortWarm", 32, 87.5, 21.0, 30)
     short_cool_mild_race = RaceConfig("ShortCoolMild", 36, 87.5, 21.0, 22)
     medium_high_pit_race = RaceConfig("MediumHighPit", 45, 87.5, 22.5, 30)
+    medium_high_pit_hot_race = RaceConfig("MediumHighPitHot", 45, 87.5, 22.5, 37)
     medium_cool_slow_cool_race = RaceConfig("MediumCoolSlowCool", 62, 91.0, 21.0, 24)
     long_non_medium_race = RaceConfig("LongNonMedium", 66, 87.5, 21.0, 30)
     assert runtime_context_key(short_warm_race) == "short_warm"
     assert runtime_context_key(short_cool_mild_race) == "short_cool_mild"
     assert runtime_context_key(medium_high_pit_race) == "medium_high_pit"
+    assert runtime_context_key(medium_high_pit_hot_race) == "medium_high_pit_hot"
     assert runtime_context_key(medium_cool_slow_cool_race) == "medium_cool_slow_cool"
     assert runtime_context_key(long_non_medium_race) == "long_non_medium"
     assert runtime_fallback_context_key("short_non_medium") == "short_non_medium"
     assert runtime_fallback_context_key("short_warm") == "short_non_medium"
     assert runtime_fallback_context_key("short_cool_mild") == "short_warm"
     assert runtime_fallback_context_key("medium_high_pit") == "medium_high_pit"
+    assert runtime_fallback_context_key("medium_high_pit_hot") == "medium_high_pit"
     assert runtime_fallback_context_key("medium_cool_slow_cool") == "long_non_medium"
     assert runtime_fallback_context_key("long_non_medium") == "long_non_medium"
     assert runtime_model_for_config(config) != runtime_model_for_config(short_warm_race)
     assert runtime_model_for_config(short_warm_race) != runtime_model_for_config(short_cool_mild_race)
     assert runtime_model_for_config(short_cool_mild_race) != runtime_model_for_config(medium_high_pit_race)
+    assert runtime_model_for_config(medium_high_pit_race) != runtime_model_for_config(medium_high_pit_hot_race)
     assert runtime_model_for_config(medium_high_pit_race) != runtime_model_for_config(long_non_medium_race)
     assert runtime_model_for_config(medium_cool_slow_cool_race) != runtime_model_for_config(long_non_medium_race)
 
