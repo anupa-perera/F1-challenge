@@ -13,6 +13,7 @@ from .historical_data import (
     load_historical_races,
     split_races,
 )
+from .learned_gate import fit_learned_gate_tree, gate_tree_to_json
 from .models import COMPOUND_ORDER, ModelParameters
 from .parameters import (
     DEFAULT_MODEL_PARAMETERS,
@@ -129,9 +130,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-races", type=int, default=None)
     parser.add_argument(
         "--context-split",
-        choices=("global", "runtime_split"),
+        choices=("global", "runtime_split", "learned_tree"),
         default="runtime_split",
-        help="Fit one global model or the current runtime context split.",
+        help="Fit one global model, the current runtime context split, or a learned tree over the existing expert models.",
     )
     return parser.parse_args()
 
@@ -587,6 +588,23 @@ def main() -> None:
         print(f"validation_selected_from={fit_result.candidate_count} checkpoints")
         print("best_parameters=")
         print(json.dumps(model_to_dict(fit_result.model), indent=2, sort_keys=True))
+        return
+
+    if args.context_split == "learned_tree":
+        fit_result = fit_learned_gate_tree(
+            training_races=training_races,
+            validation_races=validation_races,
+        )
+        print_evaluation("train", fit_result.train_evaluation)
+        print_evaluation("validation", fit_result.validation_evaluation)
+        print(f"leaf_count={fit_result.leaf_count}")
+        print("learned_gate_tree=")
+        print(
+            gate_tree_to_json(
+                fit_result.tree,
+                leaf_model_keys=fit_result.leaf_model_keys,
+            )
+        )
         return
 
     training_by_context = split_races_by_runtime_context(training_races)

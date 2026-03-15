@@ -39,6 +39,8 @@ The solver is organized so each file answers one question:
   Loads labeled historical races and applies the deterministic split.
 - `race_solver/calibration.py`
   Evaluates parameter sets and performs the coarse/refine search.
+- `race_solver/learned_gate.py`
+  Searches for a small deterministic routing tree over the existing expert models.
 - `race_solver/checks.py`
   Small self-checks for the assumptions that are easiest to break during refactors.
 
@@ -69,26 +71,17 @@ The solver is organized so each file answers one question:
   restart stints can have a different early-lap pace shape than the opening
   stint, and the fitter learns one global scale for that effect per runtime
   bucket instead of hard-coding a new family of per-compound bonuses.
-- Runtime now uses one explicit deterministic gate tree:
-  medium-length cool fast/mid tracks use a dedicated parameter set,
-  medium-length cool slow tracks with milder temperatures use their own fit,
-  medium-length cool slow tracks use their own fit,
-  hot medium-length high pit-burden fast/slow tracks with lower hot temperatures use their own fit,
-  hot medium-length high pit-burden fast/slow tracks use their own fit,
-  hot medium-length high pit-burden races use their own fit,
-  medium-length high pit-burden races use their own fit,
-  hot medium-length non-high-pit fast/mid fast tracks use their own fit,
-  hot medium-length non-high-pit fast/mid tracks use their own fit,
-  hot medium-length non-high-pit races use their own fit,
-  other medium-length races use their own fit,
-  short cool/mild non-medium races use their own fit,
-  short warm/hot non-medium races use their own fit,
-  and long non-medium races keep their own fit.
-- The gate is hierarchical, not flat:
-  - parent fallbacks are `medium_cool`, `medium_high_pit`, `medium_other`, and `non_medium`
-  - child buckets only stay in the runtime path if they beat their parent on held-out history
-  - this lets us drop weak specializations later without changing the scorer
-  - the tree is now the single source of truth for runtime routing, bucket order, and local fallback models, instead of repeating the same logic across separate `if/else` blocks and maps
+- Runtime now uses a learned, pruned deterministic gate tree over the existing
+  expert model catalog instead of a hand-grown bucket list. The frozen runtime
+  tree is intentionally small:
+  - very short races route to `short_non_medium`
+  - short races route to `short_warm`
+  - the middle lap band routes to `medium_high_pit`
+  - very long cool races route to `medium_cool_slow_cool`
+  - the remaining long races route to `long_non_medium`
+- That tree is still fully deterministic and readable, but it is simpler than
+  the old manual gate and was selected because it improved held-out exact order
+  while reducing routing complexity.
 
 ## Workflow
 
@@ -99,17 +92,12 @@ The solver is organized so each file answers one question:
    `--profile fast` for trying ideas cheaply,
    `--profile medium` before spending a full run,
    and `--profile full` as the only commit-worthy gate.
-   By default calibration now fits the runtime fourteen-way split
-   (`medium_cool_fast_mid`, `medium_cool_slow_cool`, `medium_cool_slow`,
-   `medium_high_pit_hot_fast_slow_hot`, `medium_high_pit_hot_fast_slow`,
-   `medium_high_pit_hot`,
-   `medium_high_pit`,
-   `medium_other_hot_fast_mid_fast`, `medium_other_hot_fast_mid`,
-   `medium_other_hot`,
-   `medium_other`,
-   `short_cool_mild`, `short_warm`, `long_non_medium`);
-   pass `--context-split global` to compare against the
-   single-model baseline.
+   By default calibration now fits the current runtime five-way split
+   (`short_non_medium`, `short_warm`, `medium_high_pit`,
+   `medium_cool_slow_cool`, `long_non_medium`).
+   Pass `--context-split global` to compare against the single-model baseline,
+   or `--context-split learned_tree` to search for a new compact routing tree
+   over the current expert model catalog.
 3. Freeze the best parameters back into `race_solver/parameters.py`.
 4. Run the solver with `python solution/race_simulator.py < input.json`.
 5. Explain a race with `python solution/explain_race.py < input.json`.
