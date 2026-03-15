@@ -99,6 +99,13 @@ def _select_best_model_key(
     validation_races: list[HistoricalRace],
     prediction_cache: dict[tuple[str, str], tuple[str, ...]],
 ) -> tuple[str, Evaluation, Evaluation]:
+    """Pick the frozen expert that generalizes best for this node.
+
+    Validation exact-order fit is the primary objective here because the learned
+    gate is choosing the runtime model we will actually freeze, not tuning a
+    temporary training-only branch.
+    """
+
     best_model_key = next(iter(RUNTIME_MODEL_LIBRARY))
     best_train_eval = _evaluate_model_key(training_races, best_model_key, prediction_cache)
     best_validation_eval = _evaluate_model_key(
@@ -111,15 +118,15 @@ def _select_best_model_key(
         train_eval = _evaluate_model_key(training_races, model_key, prediction_cache)
         validation_eval = _evaluate_model_key(validation_races, model_key, prediction_cache)
         if (
-            train_eval.exact_matches,
-            train_eval.pairwise_correct,
             validation_eval.exact_matches,
             validation_eval.pairwise_correct,
+            train_eval.exact_matches,
+            train_eval.pairwise_correct,
         ) > (
-            best_train_eval.exact_matches,
-            best_train_eval.pairwise_correct,
             best_validation_eval.exact_matches,
             best_validation_eval.pairwise_correct,
+            best_train_eval.exact_matches,
+            best_train_eval.pairwise_correct,
         ):
             best_model_key = model_key
             best_train_eval = train_eval

@@ -89,6 +89,16 @@ _SHORT_WARM_LEAF = _leaf(
     RUNTIME_MODEL_LIBRARY["short_warm"],
     fallback_context_key="short_non_medium",
 )
+_SHORT_COOL_MILD_LEAF = _leaf(
+    "short_cool_mild",
+    RUNTIME_MODEL_LIBRARY["short_cool_mild"],
+    fallback_context_key="short_warm",
+)
+_MEDIUM_COOL_FAST_MID_LEAF = _leaf(
+    "medium_cool_fast_mid",
+    RUNTIME_MODEL_LIBRARY["medium_cool_fast_mid"],
+    fallback_context_key="medium_high_pit",
+)
 _MEDIUM_HIGH_PIT_LEAF = _leaf(
     "medium_high_pit",
     RUNTIME_MODEL_LIBRARY["medium_high_pit"],
@@ -110,27 +120,27 @@ RUNTIME_GATE_TREE: GateNode = GateSplitNode(
     threshold=38.5,
     left=GateSplitNode(
         feature_name="total_laps",
-        threshold=37.5,
+        threshold=34.5,
         left=GateSplitNode(
             feature_name="total_laps",
-            threshold=27.5,
+            threshold=26.5,
             left=_SHORT_NON_MEDIUM_LEAF,
             right=_SHORT_WARM_LEAF,
         ),
-        right=_MEDIUM_HIGH_PIT_LEAF,
+        right=_SHORT_COOL_MILD_LEAF,
     ),
     right=GateSplitNode(
         feature_name="total_laps",
-        threshold=56.5,
+        threshold=60.5,
         left=GateSplitNode(
-            feature_name="total_laps",
-            threshold=53.5,
-            left=_MEDIUM_HIGH_PIT_LEAF,
-            right=_LONG_NON_MEDIUM_LEAF,
+            feature_name="track_temp",
+            threshold=18.5,
+            left=_MEDIUM_COOL_FAST_MID_LEAF,
+            right=_MEDIUM_HIGH_PIT_LEAF,
         ),
         right=GateSplitNode(
-            feature_name="track_temp",
-            threshold=25.0,
+            feature_name="total_laps",
+            threshold=64.5,
             left=_MEDIUM_COOL_SLOW_COOL_LEAF,
             right=_LONG_NON_MEDIUM_LEAF,
         ),
