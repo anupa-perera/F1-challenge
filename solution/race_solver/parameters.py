@@ -165,6 +165,37 @@ MEDIUM_HIGH_PIT_HOT_MODEL_PARAMETERS = ModelParameters(
 )
 
 
+MEDIUM_HIGH_PIT_HOT_FAST_SLOW_MODEL_PARAMETERS = ModelParameters(
+    compounds={
+        "SOFT": CompoundParameters(
+            pace_offset=-1.0,
+            grace_laps=5,
+            deg_rate=0.12,
+            temp_pace_scale=0.15,
+            temp_deg_scale=0.05,
+            race_length_deg_scale=0.05,
+        ),
+        "MEDIUM": CompoundParameters(
+            pace_offset=0.65,
+            grace_laps=14,
+            deg_rate=0.05,
+            temp_pace_scale=-0.025,
+            temp_deg_scale=-0.1,
+            race_length_deg_scale=0.1,
+        ),
+        "HARD": CompoundParameters(
+            pace_offset=1.5,
+            grace_laps=22,
+            deg_rate=0.018,
+            temp_pace_scale=0.0,
+            temp_deg_scale=-0.05,
+            race_length_deg_scale=0.2,
+        ),
+    },
+    lap_progress_pace_scale=0.025,
+)
+
+
 MEDIUM_OTHER_MODEL_PARAMETERS = ModelParameters(
     compounds={
         "SOFT": CompoundParameters(
@@ -190,6 +221,37 @@ MEDIUM_OTHER_MODEL_PARAMETERS = ModelParameters(
             temp_pace_scale=0.025,
             temp_deg_scale=0.05,
             race_length_deg_scale=0.2,
+        ),
+    },
+    lap_progress_pace_scale=0.025,
+)
+
+
+MEDIUM_OTHER_HOT_FAST_MID_MODEL_PARAMETERS = ModelParameters(
+    compounds={
+        "SOFT": CompoundParameters(
+            pace_offset=-1.0,
+            grace_laps=5,
+            deg_rate=0.115,
+            temp_pace_scale=0.05,
+            temp_deg_scale=0.05,
+            race_length_deg_scale=0.05,
+        ),
+        "MEDIUM": CompoundParameters(
+            pace_offset=0.75,
+            grace_laps=14,
+            deg_rate=0.045,
+            temp_pace_scale=-0.05,
+            temp_deg_scale=-0.0,
+            race_length_deg_scale=0.1,
+        ),
+        "HARD": CompoundParameters(
+            pace_offset=1.5,
+            grace_laps=23,
+            deg_rate=0.018,
+            temp_pace_scale=0.025,
+            temp_deg_scale=0.15,
+            race_length_deg_scale=0.15,
         ),
     },
     lap_progress_pace_scale=0.025,
@@ -272,8 +334,10 @@ RUNTIME_PARENT_CONTEXT_ORDER = (
 RUNTIME_CONTEXT_ORDER = (
     "medium_cool_fast_mid",
     "medium_cool_slow",
+    "medium_high_pit_hot_fast_slow",
     "medium_high_pit_hot",
     "medium_high_pit",
+    "medium_other_hot_fast_mid",
     "medium_other_hot",
     "medium_other",
     "short_non_medium",
@@ -282,8 +346,16 @@ RUNTIME_CONTEXT_ORDER = (
 
 RUNTIME_CHILDREN_BY_PARENT = {
     "medium_cool": ("medium_cool_fast_mid", "medium_cool_slow"),
-    "medium_high_pit": ("medium_high_pit_hot", "medium_high_pit"),
-    "medium_other": ("medium_other_hot", "medium_other"),
+    "medium_high_pit": (
+        "medium_high_pit_hot_fast_slow",
+        "medium_high_pit_hot",
+        "medium_high_pit",
+    ),
+    "medium_other": (
+        "medium_other_hot_fast_mid",
+        "medium_other_hot",
+        "medium_other",
+    ),
     "non_medium": ("short_non_medium", "long_non_medium"),
 }
 
@@ -343,10 +415,14 @@ def runtime_context_key(config: RaceConfig) -> str:
         return "medium_cool_slow"
     if parent_key == "medium_high_pit":
         if config.track_temp >= 37:
+            if config.base_lap_time < 85.0 or config.base_lap_time > 90.0:
+                return "medium_high_pit_hot_fast_slow"
             return "medium_high_pit_hot"
         return "medium_high_pit"
     if parent_key == "medium_other":
         if config.track_temp >= 37:
+            if config.base_lap_time <= 90.0:
+                return "medium_other_hot_fast_mid"
             return "medium_other_hot"
         return "medium_other"
     if config.total_laps < 37:
@@ -357,8 +433,10 @@ def runtime_context_key(config: RaceConfig) -> str:
 RUNTIME_MODEL_PARAMETERS = {
     "medium_cool_fast_mid": MEDIUM_COOL_FAST_MID_MODEL_PARAMETERS,
     "medium_cool_slow": MEDIUM_COOL_SLOW_MODEL_PARAMETERS,
+    "medium_high_pit_hot_fast_slow": MEDIUM_HIGH_PIT_HOT_FAST_SLOW_MODEL_PARAMETERS,
     "medium_high_pit_hot": MEDIUM_HIGH_PIT_HOT_MODEL_PARAMETERS,
     "medium_high_pit": MEDIUM_HIGH_PIT_MODEL_PARAMETERS,
+    "medium_other_hot_fast_mid": MEDIUM_OTHER_HOT_FAST_MID_MODEL_PARAMETERS,
     "medium_other_hot": MEDIUM_OTHER_HOT_MODEL_PARAMETERS,
     "medium_other": MEDIUM_OTHER_MODEL_PARAMETERS,
     "short_non_medium": SHORT_NON_MEDIUM_MODEL_PARAMETERS,
