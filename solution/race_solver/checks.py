@@ -57,6 +57,25 @@ def run_self_checks() -> None:
         for age in range(1, fresh_stint.length + 1)
     )
     assert abs(lap_sum - stint_penalty_total(fresh_stint, config)) < 1e-9
+    progress_model = replace_parameter(
+        DEFAULT_MODEL_PARAMETERS,
+        None,
+        "lap_progress_pace_scale",
+        0.25,
+    )
+    progress_lap_sum = sum(
+        lap_penalty(
+            compound="SOFT",
+            age=age,
+            lap_number=age,
+            config=config,
+            model=progress_model,
+        )
+        for age in range(1, fresh_stint.length + 1)
+    )
+    assert abs(
+        progress_lap_sum - stint_penalty_total(fresh_stint, config, model=progress_model)
+    ) < 1e-9
     assert abs(
         driver_total_time(config, driver_plan)
         - driver_score_breakdown(config, driver_plan).total_time
