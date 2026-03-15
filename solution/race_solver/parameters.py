@@ -165,7 +165,7 @@ MEDIUM_HIGH_PIT_MODEL_PARAMETERS = ModelParameters(
             race_length_deg_scale=-0.075,
         ),
     },
-    lap_progress_pace_scale=0.05,
+    lap_progress_pace_scale=0.0,
     post_stop_opening_bias_scale=0.025,
 )
 
@@ -173,7 +173,7 @@ MEDIUM_HIGH_PIT_MODEL_PARAMETERS = ModelParameters(
 MEDIUM_HIGH_PIT_COOL_MODEL_PARAMETERS = ModelParameters(
     compounds={
         "SOFT": CompoundParameters(
-            pace_offset=-1.3,
+            pace_offset=-1.25,
             grace_laps=5,
             deg_rate=0.1,
             temp_pace_scale=0.2,
@@ -181,7 +181,7 @@ MEDIUM_HIGH_PIT_COOL_MODEL_PARAMETERS = ModelParameters(
             race_length_deg_scale=0.025,
         ),
         "MEDIUM": CompoundParameters(
-            pace_offset=0.55,
+            pace_offset=0.6,
             grace_laps=16,
             deg_rate=0.05,
             temp_pace_scale=-0.125,
@@ -189,7 +189,7 @@ MEDIUM_HIGH_PIT_COOL_MODEL_PARAMETERS = ModelParameters(
             race_length_deg_scale=-0.025,
         ),
         "HARD": CompoundParameters(
-            pace_offset=1.55,
+            pace_offset=1.6,
             grace_laps=26,
             deg_rate=0.025,
             temp_pace_scale=0.075,
@@ -197,7 +197,7 @@ MEDIUM_HIGH_PIT_COOL_MODEL_PARAMETERS = ModelParameters(
             race_length_deg_scale=-0.1,
         ),
     },
-    lap_progress_pace_scale=0.05,
+    lap_progress_pace_scale=0.0,
     post_stop_opening_bias_scale=-0.0,
 )
 
