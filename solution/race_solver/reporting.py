@@ -27,7 +27,8 @@ def format_driver_breakdown(
             "    "
             f"{stint.compound:<6} laps {stint.start_lap:02d}-{stint.end_lap:02d}  "
             f"pace={stint.pace_total:.3f}  "
-            f"(base={stint.base_pace_total:.3f}, progress={stint.progress_adjustment_total:.3f})  "
+            f"(base={stint.base_pace_total:.3f}, progress={stint.progress_adjustment_total:.3f}, "
+            f"restart={stint.opening_bias_total:.3f})  "
             f"wear={stint.wear_total:.3f}  "
             f"total={stint.total_penalty:.3f}"
         )

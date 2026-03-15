@@ -59,6 +59,7 @@ class CompoundParameters:
 class ModelParameters:
     compounds: Mapping[str, CompoundParameters]
     lap_progress_pace_scale: float
+    post_stop_opening_bias_scale: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -69,6 +70,7 @@ class StintScoreBreakdown:
     length: int
     base_pace_total: float
     progress_adjustment_total: float
+    opening_bias_total: float
     pace_total: float
     wear_total: float
     total_penalty: float

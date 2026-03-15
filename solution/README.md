@@ -51,6 +51,10 @@ The solver is organized so each file answers one question:
 - The current wear model treats age beyond the grace window as a degradation
   state and applies a nonlinear penalty to that state, which proved much
   stronger than the earlier direct age-overage penalty.
+- The scorer now also applies a calibrated post-stop opening bias:
+  restart stints can have a different early-lap pace shape than the opening
+  stint, and the fitter learns one global scale for that effect per runtime
+  bucket instead of hard-coding a new family of per-compound bonuses.
 - Runtime now uses a deterministic context gate:
   medium-length cool fast/mid tracks use a dedicated parameter set,
   medium-length cool slow tracks with milder temperatures use their own fit,

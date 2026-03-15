@@ -88,6 +88,35 @@ def stint_progress_sum(stint: Stint, total_laps: int) -> float:
     return ((2.0 * lap_sum) - (stint.length * (total_laps + 1))) / total_laps
 
 
+def is_post_stop_stint(*, start_lap: int) -> bool:
+    """Return whether a stint starts after a pit stop rather than on lap one."""
+
+    return start_lap > 1
+
+
+def opening_bias_units(age: int, grace_laps: int) -> float:
+    """Fade a restart opening effect across the tire's stable window.
+
+    The most plausible scorer-side gap left in the model is that restart stints
+    may not have the same early-lap shape as the opening stint. We reuse the
+    existing grace window as the duration of that opening shape so calibration
+    only has to learn one new global scale instead of a new family of timers.
+    """
+
+    if grace_laps <= 0 or age > grace_laps:
+        return 0.0
+    return (grace_laps + 1 - age) / grace_laps
+
+
+def stint_opening_bias_units(stint_length: int, grace_laps: int) -> float:
+    """Closed-form sum of restart opening units across a stint."""
+
+    if grace_laps <= 0:
+        return 0.0
+    opening_laps = min(stint_length, grace_laps)
+    return (opening_laps * ((2 * grace_laps) + 1 - opening_laps)) / (2.0 * grace_laps)
+
+
 def wear_overage(age: int, grace_laps: int) -> int:
     """Return how far a tire is past its stable operating window."""
 
@@ -128,6 +157,14 @@ def lap_penalty(
         * sequence_order_emphasis(config)
         * lap_progress_value(lap_number=lap_number, total_laps=config.total_laps)
     )
+    opening_bias_total = 0.0
+    if lap_number > age:
+        opening_bias_total = (
+            params.pace_offset
+            * pace_multiplier
+            * resolved_model.post_stop_opening_bias_scale
+            * opening_bias_units(age=age, grace_laps=params.grace_laps)
+        )
 
     pace_term = params.pace_offset * pace_multiplier * progress_multiplier
     wear_term = (
@@ -135,7 +172,7 @@ def lap_penalty(
         * params.deg_rate
         * deg_multiplier
     )
-    return pace_term + wear_term
+    return pace_term + opening_bias_total + wear_term
 
 
 def stint_penalty_total(
@@ -163,7 +200,15 @@ def stint_penalty_total(
         * sequence_order_emphasis(config)
         * stint_progress_sum(stint=stint, total_laps=config.total_laps)
     )
-    pace_total = base_pace_total + progress_adjustment_total
+    opening_bias_total = 0.0
+    if is_post_stop_stint(start_lap=stint.start_lap):
+        opening_bias_total = (
+            params.pace_offset
+            * pace_multiplier
+            * resolved_model.post_stop_opening_bias_scale
+            * stint_opening_bias_units(stint.length, params.grace_laps)
+        )
+    pace_total = base_pace_total + progress_adjustment_total + opening_bias_total
     wear_units = stint_wear_penalty_units(stint.length, params.grace_laps)
     wear_total = wear_units * params.deg_rate * deg_multiplier
     return pace_total + wear_total
@@ -192,7 +237,15 @@ def stint_score_breakdown(
         * sequence_order_emphasis(config)
         * stint_progress_sum(stint=stint, total_laps=config.total_laps)
     )
-    pace_total = base_pace_total + progress_adjustment_total
+    opening_bias_total = 0.0
+    if is_post_stop_stint(start_lap=stint.start_lap):
+        opening_bias_total = (
+            params.pace_offset
+            * pace_multiplier
+            * resolved_model.post_stop_opening_bias_scale
+            * stint_opening_bias_units(stint.length, params.grace_laps)
+        )
+    pace_total = base_pace_total + progress_adjustment_total + opening_bias_total
     wear_units = stint_wear_penalty_units(stint.length, params.grace_laps)
     wear_total = wear_units * params.deg_rate * deg_multiplier
 
@@ -203,6 +256,7 @@ def stint_score_breakdown(
         length=stint.length,
         base_pace_total=base_pace_total,
         progress_adjustment_total=progress_adjustment_total,
+        opening_bias_total=opening_bias_total,
         pace_total=pace_total,
         wear_total=wear_total,
         total_penalty=pace_total + wear_total,

@@ -38,37 +38,39 @@ DEFAULT_MODEL_PARAMETERS = ModelParameters(
         ),
     },
     lap_progress_pace_scale=0.0,
+    post_stop_opening_bias_scale=0.0,
 )
 
 
 MEDIUM_COOL_SLOW_MODEL_PARAMETERS = ModelParameters(
     compounds={
         "SOFT": CompoundParameters(
-            pace_offset=-1.45,
+            pace_offset=-1.5,
             grace_laps=4,
-            deg_rate=0.085,
+            deg_rate=0.09,
             temp_pace_scale=0.05,
-            temp_deg_scale=0.2,
-            race_length_deg_scale=0.05,
+            temp_deg_scale=0.1,
+            race_length_deg_scale=0.15,
         ),
         "MEDIUM": CompoundParameters(
-            pace_offset=0.5,
+            pace_offset=0.45,
             grace_laps=15,
-            deg_rate=0.04,
-            temp_pace_scale=-0.125,
-            temp_deg_scale=0.15,
-            race_length_deg_scale=0.05,
+            deg_rate=0.05,
+            temp_pace_scale=-0.2,
+            temp_deg_scale=0.2,
+            race_length_deg_scale=-0.0,
         ),
         "HARD": CompoundParameters(
-            pace_offset=1.45,
+            pace_offset=1.5,
             grace_laps=23,
-            deg_rate=0.015,
-            temp_pace_scale=0.1,
-            temp_deg_scale=0.125,
-            race_length_deg_scale=0.125,
+            deg_rate=0.018,
+            temp_pace_scale=0.05,
+            temp_deg_scale=0.1,
+            race_length_deg_scale=-0.1,
         ),
     },
     lap_progress_pace_scale=0.0,
+    post_stop_opening_bias_scale=0.175,
 )
 
 
@@ -77,60 +79,62 @@ MEDIUM_COOL_SLOW_COOL_MODEL_PARAMETERS = ModelParameters(
         "SOFT": CompoundParameters(
             pace_offset=-1.5,
             grace_laps=4,
-            deg_rate=0.085,
-            temp_pace_scale=0.05,
-            temp_deg_scale=0.2,
-            race_length_deg_scale=0.05,
+            deg_rate=0.1,
+            temp_pace_scale=-0.025,
+            temp_deg_scale=0.15,
+            race_length_deg_scale=0.15,
         ),
         "MEDIUM": CompoundParameters(
-            pace_offset=0.5,
+            pace_offset=0.55,
             grace_laps=15,
-            deg_rate=0.04,
-            temp_pace_scale=-0.125,
-            temp_deg_scale=0.15,
-            race_length_deg_scale=0.05,
+            deg_rate=0.05,
+            temp_pace_scale=-0.175,
+            temp_deg_scale=0.1,
+            race_length_deg_scale=0.075,
         ),
         "HARD": CompoundParameters(
-            pace_offset=1.45,
-            grace_laps=23,
-            deg_rate=0.015,
-            temp_pace_scale=0.1,
-            temp_deg_scale=0.125,
-            race_length_deg_scale=0.125,
+            pace_offset=1.5,
+            grace_laps=21,
+            deg_rate=0.018,
+            temp_pace_scale=0.0,
+            temp_deg_scale=0.05,
+            race_length_deg_scale=0.05,
         ),
     },
     lap_progress_pace_scale=0.0,
+    post_stop_opening_bias_scale=0.4,
 )
 
 
 MEDIUM_COOL_FAST_MID_MODEL_PARAMETERS = ModelParameters(
     compounds={
         "SOFT": CompoundParameters(
-            pace_offset=-1.5,
+            pace_offset=-1.45,
             grace_laps=4,
-            deg_rate=0.08,
-            temp_pace_scale=0.15,
-            temp_deg_scale=0.2,
-            race_length_deg_scale=0.1,
+            deg_rate=0.09,
+            temp_pace_scale=-0.0,
+            temp_deg_scale=0.1,
+            race_length_deg_scale=0.2,
         ),
         "MEDIUM": CompoundParameters(
-            pace_offset=0.45,
+            pace_offset=0.65,
             grace_laps=15,
-            deg_rate=0.04,
-            temp_pace_scale=-0.1,
+            deg_rate=0.05,
+            temp_pace_scale=0.05,
             temp_deg_scale=0.2,
-            race_length_deg_scale=0.05,
+            race_length_deg_scale=0.15,
         ),
         "HARD": CompoundParameters(
             pace_offset=1.5,
-            grace_laps=23,
+            grace_laps=21,
             deg_rate=0.015,
-            temp_pace_scale=0.1,
-            temp_deg_scale=0.2,
-            race_length_deg_scale=0.125,
+            temp_pace_scale=0.0,
+            temp_deg_scale=0.05,
+            race_length_deg_scale=0.05,
         ),
     },
     lap_progress_pace_scale=0.0,
+    post_stop_opening_bias_scale=0.2,
 )
 
 
@@ -140,17 +144,81 @@ MEDIUM_HIGH_PIT_MODEL_PARAMETERS = ModelParameters(
             pace_offset=-1.5,
             grace_laps=5,
             deg_rate=0.12,
-            temp_pace_scale=0.075,
+            temp_pace_scale=0.1,
             temp_deg_scale=0.075,
-            race_length_deg_scale=0.15,
+            race_length_deg_scale=0.2,
         ),
         "MEDIUM": CompoundParameters(
-            pace_offset=0.45,
+            pace_offset=0.35,
             grace_laps=14,
             deg_rate=0.05,
-            temp_pace_scale=0.05,
-            temp_deg_scale=-0.05,
-            race_length_deg_scale=0.175,
+            temp_pace_scale=0.1,
+            temp_deg_scale=0.025,
+            race_length_deg_scale=0.2,
+        ),
+        "HARD": CompoundParameters(
+            pace_offset=1.5,
+            grace_laps=23,
+            deg_rate=0.025,
+            temp_pace_scale=0.125,
+            temp_deg_scale=0.025,
+            race_length_deg_scale=0.15,
+        ),
+    },
+    lap_progress_pace_scale=-0.025,
+    post_stop_opening_bias_scale=0.025,
+)
+
+
+MEDIUM_HIGH_PIT_HOT_MODEL_PARAMETERS = ModelParameters(
+    compounds={
+        "SOFT": CompoundParameters(
+            pace_offset=-1.4,
+            grace_laps=5,
+            deg_rate=0.11,
+            temp_pace_scale=0.075,
+            temp_deg_scale=0.05,
+            race_length_deg_scale=0.1,
+        ),
+        "MEDIUM": CompoundParameters(
+            pace_offset=0.65,
+            grace_laps=14,
+            deg_rate=0.05,
+            temp_pace_scale=0.15,
+            temp_deg_scale=-0.0,
+            race_length_deg_scale=0.2,
+        ),
+        "HARD": CompoundParameters(
+            pace_offset=1.5,
+            grace_laps=20,
+            deg_rate=0.018,
+            temp_pace_scale=0.0,
+            temp_deg_scale=-0.1,
+            race_length_deg_scale=0.15,
+        ),
+    },
+    lap_progress_pace_scale=0.0,
+    post_stop_opening_bias_scale=0.25,
+)
+
+
+MEDIUM_HIGH_PIT_HOT_FAST_SLOW_MODEL_PARAMETERS = ModelParameters(
+    compounds={
+        "SOFT": CompoundParameters(
+            pace_offset=-1.5,
+            grace_laps=5,
+            deg_rate=0.11,
+            temp_pace_scale=0.15,
+            temp_deg_scale=0.1,
+            race_length_deg_scale=0.2,
+        ),
+        "MEDIUM": CompoundParameters(
+            pace_offset=0.65,
+            grace_laps=14,
+            deg_rate=0.05,
+            temp_pace_scale=-0.1,
+            temp_deg_scale=0.05,
+            race_length_deg_scale=0.125,
         ),
         "HARD": CompoundParameters(
             pace_offset=1.5,
@@ -158,29 +226,30 @@ MEDIUM_HIGH_PIT_MODEL_PARAMETERS = ModelParameters(
             deg_rate=0.018,
             temp_pace_scale=0.0,
             temp_deg_scale=-0.025,
-            race_length_deg_scale=0.2,
+            race_length_deg_scale=0.175,
         ),
     },
-    lap_progress_pace_scale=0.025,
+    lap_progress_pace_scale=0.0,
+    post_stop_opening_bias_scale=0.2,
 )
 
 
-MEDIUM_HIGH_PIT_HOT_MODEL_PARAMETERS = ModelParameters(
+MEDIUM_HIGH_PIT_HOT_FAST_SLOW_HOT_MODEL_PARAMETERS = ModelParameters(
     compounds={
         "SOFT": CompoundParameters(
-            pace_offset=-1.0,
+            pace_offset=-1.5,
             grace_laps=5,
-            deg_rate=0.12,
-            temp_pace_scale=0.1,
+            deg_rate=0.11,
+            temp_pace_scale=0.175,
             temp_deg_scale=0.05,
             race_length_deg_scale=0.1,
         ),
         "MEDIUM": CompoundParameters(
-            pace_offset=0.75,
+            pace_offset=0.55,
             grace_laps=14,
             deg_rate=0.05,
-            temp_pace_scale=-0.025,
-            temp_deg_scale=-0.05,
+            temp_pace_scale=0.05,
+            temp_deg_scale=-0.0,
             race_length_deg_scale=0.15,
         ),
         "HARD": CompoundParameters(
@@ -188,73 +257,12 @@ MEDIUM_HIGH_PIT_HOT_MODEL_PARAMETERS = ModelParameters(
             grace_laps=21,
             deg_rate=0.018,
             temp_pace_scale=0.0,
-            temp_deg_scale=-0.1,
-            race_length_deg_scale=0.15,
-        ),
-    },
-    lap_progress_pace_scale=0.025,
-)
-
-
-MEDIUM_HIGH_PIT_HOT_FAST_SLOW_MODEL_PARAMETERS = ModelParameters(
-    compounds={
-        "SOFT": CompoundParameters(
-            pace_offset=-1.0,
-            grace_laps=5,
-            deg_rate=0.12,
-            temp_pace_scale=0.15,
-            temp_deg_scale=0.05,
-            race_length_deg_scale=0.05,
-        ),
-        "MEDIUM": CompoundParameters(
-            pace_offset=0.65,
-            grace_laps=14,
-            deg_rate=0.05,
-            temp_pace_scale=-0.025,
-            temp_deg_scale=-0.1,
-            race_length_deg_scale=0.1,
-        ),
-        "HARD": CompoundParameters(
-            pace_offset=1.5,
-            grace_laps=22,
-            deg_rate=0.018,
-            temp_pace_scale=0.0,
             temp_deg_scale=-0.05,
-            race_length_deg_scale=0.2,
+            race_length_deg_scale=0.175,
         ),
     },
-    lap_progress_pace_scale=0.025,
-)
-
-
-MEDIUM_HIGH_PIT_HOT_FAST_SLOW_HOT_MODEL_PARAMETERS = ModelParameters(
-    compounds={
-        "SOFT": CompoundParameters(
-            pace_offset=-1.0,
-            grace_laps=5,
-            deg_rate=0.11,
-            temp_pace_scale=0.15,
-            temp_deg_scale=0.05,
-            race_length_deg_scale=0.05,
-        ),
-        "MEDIUM": CompoundParameters(
-            pace_offset=0.65,
-            grace_laps=14,
-            deg_rate=0.045,
-            temp_pace_scale=-0.025,
-            temp_deg_scale=-0.15,
-            race_length_deg_scale=0.1,
-        ),
-        "HARD": CompoundParameters(
-            pace_offset=1.5,
-            grace_laps=22,
-            deg_rate=0.018,
-            temp_pace_scale=-0.05,
-            temp_deg_scale=-0.05,
-            race_length_deg_scale=0.2,
-        ),
-    },
-    lap_progress_pace_scale=0.025,
+    lap_progress_pace_scale=0.0,
+    post_stop_opening_bias_scale=0.1,
 )
 
 
@@ -262,123 +270,127 @@ MEDIUM_OTHER_MODEL_PARAMETERS = ModelParameters(
     compounds={
         "SOFT": CompoundParameters(
             pace_offset=-1.5,
-            grace_laps=5,
-            deg_rate=0.115,
-            temp_pace_scale=0.0,
-            temp_deg_scale=0.05,
-            race_length_deg_scale=0.1,
+            grace_laps=4,
+            deg_rate=0.085,
+            temp_pace_scale=0.175,
+            temp_deg_scale=0.1,
+            race_length_deg_scale=0.125,
         ),
         "MEDIUM": CompoundParameters(
-            pace_offset=0.4,
-            grace_laps=14,
+            pace_offset=0.6,
+            grace_laps=15,
             deg_rate=0.045,
-            temp_pace_scale=0.025,
-            temp_deg_scale=0.05,
-            race_length_deg_scale=0.175,
+            temp_pace_scale=0.2,
+            temp_deg_scale=-0.05,
+            race_length_deg_scale=0.1,
         ),
         "HARD": CompoundParameters(
             pace_offset=1.5,
             grace_laps=22,
-            deg_rate=0.018,
-            temp_pace_scale=0.025,
-            temp_deg_scale=0.05,
+            deg_rate=0.015,
+            temp_pace_scale=0.15,
+            temp_deg_scale=-0.025,
             race_length_deg_scale=0.2,
         ),
     },
-    lap_progress_pace_scale=0.025,
+    lap_progress_pace_scale=-0.125,
+    post_stop_opening_bias_scale=0.025,
 )
 
 
 MEDIUM_OTHER_HOT_FAST_MID_MODEL_PARAMETERS = ModelParameters(
     compounds={
         "SOFT": CompoundParameters(
-            pace_offset=-1.0,
+            pace_offset=-1.5,
             grace_laps=5,
-            deg_rate=0.115,
-            temp_pace_scale=0.05,
-            temp_deg_scale=0.05,
-            race_length_deg_scale=0.05,
-        ),
-        "MEDIUM": CompoundParameters(
-            pace_offset=0.75,
-            grace_laps=14,
-            deg_rate=0.045,
+            deg_rate=0.1,
             temp_pace_scale=-0.05,
-            temp_deg_scale=-0.0,
-            race_length_deg_scale=0.1,
-        ),
-        "HARD": CompoundParameters(
-            pace_offset=1.5,
-            grace_laps=23,
-            deg_rate=0.018,
-            temp_pace_scale=0.025,
-            temp_deg_scale=0.15,
+            temp_deg_scale=0.1,
             race_length_deg_scale=0.15,
         ),
+        "MEDIUM": CompoundParameters(
+            pace_offset=0.35,
+            grace_laps=14,
+            deg_rate=0.05,
+            temp_pace_scale=0.2,
+            temp_deg_scale=-0.0,
+            race_length_deg_scale=0.125,
+        ),
+        "HARD": CompoundParameters(
+            pace_offset=1.4,
+            grace_laps=21,
+            deg_rate=0.018,
+            temp_pace_scale=0.0,
+            temp_deg_scale=-0.1,
+            race_length_deg_scale=0.2,
+        ),
     },
-    lap_progress_pace_scale=0.025,
+    lap_progress_pace_scale=0.0,
+    post_stop_opening_bias_scale=0.1,
 )
 
 
 MEDIUM_OTHER_HOT_FAST_MID_FAST_MODEL_PARAMETERS = ModelParameters(
     compounds={
         "SOFT": CompoundParameters(
-            pace_offset=-1.0,
+            pace_offset=-1.5,
             grace_laps=5,
-            deg_rate=0.115,
-            temp_pace_scale=-0.0,
-            temp_deg_scale=0.05,
-            race_length_deg_scale=0.05,
+            deg_rate=0.11,
+            temp_pace_scale=0.2,
+            temp_deg_scale=0.1,
+            race_length_deg_scale=0.1,
         ),
         "MEDIUM": CompoundParameters(
-            pace_offset=0.75,
+            pace_offset=0.55,
             grace_laps=14,
-            deg_rate=0.045,
-            temp_pace_scale=-0.15,
+            deg_rate=0.05,
+            temp_pace_scale=0.15,
             temp_deg_scale=-0.0,
-            race_length_deg_scale=0.1,
+            race_length_deg_scale=0.125,
         ),
         "HARD": CompoundParameters(
             pace_offset=1.5,
-            grace_laps=23,
+            grace_laps=21,
             deg_rate=0.018,
-            temp_pace_scale=0.025,
-            temp_deg_scale=0.15,
-            race_length_deg_scale=0.15,
+            temp_pace_scale=-0.05,
+            temp_deg_scale=-0.025,
+            race_length_deg_scale=-0.0,
         ),
     },
-    lap_progress_pace_scale=0.025,
+    lap_progress_pace_scale=0.0,
+    post_stop_opening_bias_scale=0.1,
 )
 
 
 MEDIUM_OTHER_HOT_MODEL_PARAMETERS = ModelParameters(
     compounds={
         "SOFT": CompoundParameters(
-            pace_offset=-0.9,
+            pace_offset=-1.3,
             grace_laps=5,
-            deg_rate=0.115,
-            temp_pace_scale=0.05,
-            temp_deg_scale=0.05,
-            race_length_deg_scale=0.05,
+            deg_rate=0.11,
+            temp_pace_scale=0.075,
+            temp_deg_scale=0.1,
+            race_length_deg_scale=0.2,
         ),
         "MEDIUM": CompoundParameters(
-            pace_offset=0.65,
+            pace_offset=0.55,
             grace_laps=14,
-            deg_rate=0.045,
-            temp_pace_scale=-0.05,
-            temp_deg_scale=-0.0,
-            race_length_deg_scale=0.1,
+            deg_rate=0.05,
+            temp_pace_scale=0.0,
+            temp_deg_scale=0.075,
+            race_length_deg_scale=0.125,
         ),
         "HARD": CompoundParameters(
             pace_offset=1.5,
-            grace_laps=23,
+            grace_laps=21,
             deg_rate=0.018,
-            temp_pace_scale=0.025,
-            temp_deg_scale=0.15,
-            race_length_deg_scale=0.15,
+            temp_pace_scale=0.0,
+            temp_deg_scale=-0.025,
+            race_length_deg_scale=0.175,
         ),
     },
-    lap_progress_pace_scale=0.025,
+    lap_progress_pace_scale=0.0,
+    post_stop_opening_bias_scale=0.2,
 )
 
 
@@ -410,6 +422,7 @@ SHORT_NON_MEDIUM_MODEL_PARAMETERS = ModelParameters(
         ),
     },
     lap_progress_pace_scale=0.0,
+    post_stop_opening_bias_scale=0.0,
 )
 
 
@@ -417,65 +430,95 @@ SHORT_COOL_MILD_MODEL_PARAMETERS = ModelParameters(
     compounds={
         "SOFT": CompoundParameters(
             pace_offset=-1.4,
-            grace_laps=4,
-            deg_rate=0.1,
-            temp_pace_scale=-0.025,
-            temp_deg_scale=-0.0,
+            grace_laps=5,
+            deg_rate=0.12,
+            temp_pace_scale=0.175,
+            temp_deg_scale=0.05,
             race_length_deg_scale=0.2,
         ),
         "MEDIUM": CompoundParameters(
             pace_offset=0.25,
-            grace_laps=13,
-            deg_rate=0.04,
-            temp_pace_scale=0.05,
-            temp_deg_scale=0.125,
-            race_length_deg_scale=0.025,
+            grace_laps=14,
+            deg_rate=0.05,
+            temp_pace_scale=0.15,
+            temp_deg_scale=-0.125,
+            race_length_deg_scale=0.05,
         ),
         "HARD": CompoundParameters(
             pace_offset=1.5,
-            grace_laps=25,
-            deg_rate=0.015,
-            temp_pace_scale=0.0,
-            temp_deg_scale=-0.025,
-            race_length_deg_scale=0.125,
+            grace_laps=26,
+            deg_rate=0.005,
+            temp_pace_scale=-0.05,
+            temp_deg_scale=0.15,
+            race_length_deg_scale=-0.2,
         ),
     },
     lap_progress_pace_scale=0.0,
+    post_stop_opening_bias_scale=0.025,
 )
 
 
 SHORT_WARM_MODEL_PARAMETERS = ModelParameters(
     compounds={
         "SOFT": CompoundParameters(
-            pace_offset=-1.4,
+            pace_offset=-1.35,
             grace_laps=4,
-            deg_rate=0.1,
-            temp_pace_scale=0.075,
-            temp_deg_scale=-0.1,
+            deg_rate=0.085,
+            temp_pace_scale=0.2,
+            temp_deg_scale=0.05,
             race_length_deg_scale=0.2,
         ),
         "MEDIUM": CompoundParameters(
             pace_offset=0.25,
             grace_laps=13,
-            deg_rate=0.04,
-            temp_pace_scale=-0.2,
-            temp_deg_scale=-0.0,
-            race_length_deg_scale=0.025,
+            deg_rate=0.035,
+            temp_pace_scale=-0.05,
+            temp_deg_scale=0.2,
+            race_length_deg_scale=0.05,
         ),
         "HARD": CompoundParameters(
             pace_offset=1.5,
             grace_laps=26,
-            deg_rate=0.025,
-            temp_pace_scale=0.0,
-            temp_deg_scale=-0.175,
+            deg_rate=0.01,
+            temp_pace_scale=0.125,
+            temp_deg_scale=-0.05,
             race_length_deg_scale=0.2,
         ),
     },
-    lap_progress_pace_scale=0.0,
+    lap_progress_pace_scale=0.025,
+    post_stop_opening_bias_scale=-0.025,
 )
 
-
-LONG_NON_MEDIUM_MODEL_PARAMETERS = DEFAULT_MODEL_PARAMETERS
+LONG_NON_MEDIUM_MODEL_PARAMETERS = ModelParameters(
+    compounds={
+        "SOFT": CompoundParameters(
+            pace_offset=-1.5,
+            grace_laps=4,
+            deg_rate=0.11,
+            temp_pace_scale=0.2,
+            temp_deg_scale=0.1,
+            race_length_deg_scale=0.2,
+        ),
+        "MEDIUM": CompoundParameters(
+            pace_offset=0.2,
+            grace_laps=13,
+            deg_rate=0.05,
+            temp_pace_scale=0.0,
+            temp_deg_scale=0.075,
+            race_length_deg_scale=0.125,
+        ),
+        "HARD": CompoundParameters(
+            pace_offset=1.5,
+            grace_laps=20,
+            deg_rate=0.018,
+            temp_pace_scale=0.0,
+            temp_deg_scale=-0.025,
+            race_length_deg_scale=0.175,
+        ),
+    },
+    lap_progress_pace_scale=0.0,
+    post_stop_opening_bias_scale=0.0,
+)
 
 
 RUNTIME_PARENT_CONTEXT_ORDER = (
@@ -685,6 +728,7 @@ def replace_parameter(
             compound: replacement,
         },
         lap_progress_pace_scale=model.lap_progress_pace_scale,
+        post_stop_opening_bias_scale=model.post_stop_opening_bias_scale,
     )
 
 
@@ -721,6 +765,7 @@ def model_to_dict(model: ModelParameters) -> dict[str, dict[str, float | int]]:
     return {
         "globals": {
             "lap_progress_pace_scale": model.lap_progress_pace_scale,
+            "post_stop_opening_bias_scale": model.post_stop_opening_bias_scale,
         },
         "compounds": {
             compound: {

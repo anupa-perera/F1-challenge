@@ -59,6 +59,22 @@ def run_self_checks() -> None:
         driver_total_time(config, driver_plan)
         - driver_score_breakdown(config, driver_plan).total_time
     ) < 1e-9
+    restart_bias_model = replace_parameter(
+        DEFAULT_MODEL_PARAMETERS,
+        None,
+        "post_stop_opening_bias_scale",
+        0.5,
+    )
+    opening_hard_stint = Stint(compound="HARD", start_lap=1, end_lap=5, length=5)
+    restart_hard_stint = Stint(compound="HARD", start_lap=6, end_lap=10, length=5)
+    opening_soft_stint = Stint(compound="SOFT", start_lap=1, end_lap=5, length=5)
+    restart_soft_stint = Stint(compound="SOFT", start_lap=6, end_lap=10, length=5)
+    assert stint_penalty_total(restart_hard_stint, config, model=restart_bias_model) > (
+        stint_penalty_total(opening_hard_stint, config, model=restart_bias_model)
+    )
+    assert stint_penalty_total(restart_soft_stint, config, model=restart_bias_model) < (
+        stint_penalty_total(opening_soft_stint, config, model=restart_bias_model)
+    )
 
     # A longer race should increase wear pressure more than a shorter race
     # when everything else stays fixed, because the calibrated model now uses

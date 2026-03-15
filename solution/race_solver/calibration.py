@@ -45,6 +45,7 @@ PARAMETER_BOUNDS = {
     "temp_deg_scale": {compound: (-0.2, 0.2) for compound in COMPOUND_ORDER},
     "race_length_deg_scale": {compound: (-0.2, 0.2) for compound in COMPOUND_ORDER},
     "lap_progress_pace_scale": {None: (-0.75, 0.75)},
+    "post_stop_opening_bias_scale": {None: (-0.5, 0.5)},
 }
 COARSE_STEPS = {
     "pace_offset": 0.1,
@@ -54,6 +55,7 @@ COARSE_STEPS = {
     "temp_deg_scale": 0.05,
     "race_length_deg_scale": 0.05,
     "lap_progress_pace_scale": 0.05,
+    "post_stop_opening_bias_scale": 0.05,
 }
 REFINE_STEPS = {
     "pace_offset": 0.05,
@@ -63,6 +65,7 @@ REFINE_STEPS = {
     "temp_deg_scale": 0.025,
     "race_length_deg_scale": 0.025,
     "lap_progress_pace_scale": 0.025,
+    "post_stop_opening_bias_scale": 0.025,
 }
 
 
@@ -183,6 +186,7 @@ def resolve_profile(args: argparse.Namespace) -> CalibrationProfile:
 def model_signature(model: ModelParameters) -> tuple[float | int, ...]:
     signature: list[float | int] = [
         round(model.lap_progress_pace_scale, 6),
+        round(model.post_stop_opening_bias_scale, 6),
     ]
     for compound in COMPOUND_ORDER:
         params = model.compounds[compound]
@@ -339,6 +343,7 @@ def append_checkpoint(
 def search_sequence() -> list[tuple[str | None, str]]:
     field_order = [
         "lap_progress_pace_scale",
+        "post_stop_opening_bias_scale",
         "pace_offset",
         "grace_laps",
         "deg_rate",
@@ -348,7 +353,7 @@ def search_sequence() -> list[tuple[str | None, str]]:
     ]
     sequence: list[tuple[str | None, str]] = []
     for field_name in field_order:
-        if field_name == "lap_progress_pace_scale":
+        if field_name in {"lap_progress_pace_scale", "post_stop_opening_bias_scale"}:
             sequence.append((None, field_name))
             continue
         for compound in COMPOUND_ORDER:
