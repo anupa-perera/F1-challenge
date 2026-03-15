@@ -503,7 +503,7 @@ LONG_NON_MEDIUM_MODEL_PARAMETERS = ModelParameters(
             pace_offset=0.2,
             grace_laps=13,
             deg_rate=0.05,
-            temp_pace_scale=0.15,
+            temp_pace_scale=0.05,
             temp_deg_scale=0.075,
             race_length_deg_scale=0.1,
         ),
