@@ -520,15 +520,6 @@ LONG_NON_MEDIUM_MODEL_PARAMETERS = ModelParameters(
     post_stop_opening_bias_scale=0.0,
 )
 
-
-RUNTIME_PARENT_CONTEXT_ORDER = (
-    "medium_cool",
-    "medium_high_pit",
-    "medium_other",
-    "non_medium",
-)
-
-
 RUNTIME_CONTEXT_ORDER = (
     "medium_cool_fast_mid",
     "medium_cool_slow_cool",
@@ -545,33 +536,6 @@ RUNTIME_CONTEXT_ORDER = (
     "short_warm",
     "long_non_medium",
 )
-
-RUNTIME_CHILDREN_BY_PARENT = {
-    "medium_cool": (
-        "medium_cool_fast_mid",
-        "medium_cool_slow_cool",
-        "medium_cool_slow",
-    ),
-    "medium_high_pit": (
-        "medium_high_pit_hot_fast_slow_hot",
-        "medium_high_pit_hot_fast_slow",
-        "medium_high_pit_hot",
-        "medium_high_pit",
-    ),
-    "medium_other": (
-        "medium_other_hot_fast_mid_fast",
-        "medium_other_hot_fast_mid",
-        "medium_other_hot",
-        "medium_other",
-    ),
-    "non_medium": ("short_cool_mild", "short_warm", "long_non_medium"),
-}
-
-RUNTIME_PARENT_BY_CHILD = {
-    child_key: parent_key
-    for parent_key, child_keys in RUNTIME_CHILDREN_BY_PARENT.items()
-    for child_key in child_keys
-}
 
 RUNTIME_FALLBACK_CONTEXT_BY_CHILD = {
     # Fast/mid cool races only exist because the old cool fit underpriced them.
@@ -729,7 +693,6 @@ def replace_parameter(
         },
         lap_progress_pace_scale=model.lap_progress_pace_scale,
         post_stop_opening_bias_scale=model.post_stop_opening_bias_scale,
-        scorer_family=model.scorer_family,
     )
 
 
@@ -762,10 +725,9 @@ def validate_model(model: ModelParameters) -> bool:
     return True
 
 
-def model_to_dict(model: ModelParameters) -> dict[str, dict[str, str | float | int]]:
+def model_to_dict(model: ModelParameters) -> dict[str, dict[str, float | int]]:
     return {
         "globals": {
-            "scorer_family": model.scorer_family,
             "lap_progress_pace_scale": model.lap_progress_pace_scale,
             "post_stop_opening_bias_scale": model.post_stop_opening_bias_scale,
         },
@@ -780,11 +742,4 @@ def model_to_dict(model: ModelParameters) -> dict[str, dict[str, str | float | i
             }
             for compound, params in model.compounds.items()
         },
-    }
-
-
-def runtime_models_to_dict() -> dict[str, dict[str, dict[str, str | float | int]]]:
-    return {
-        context_key: model_to_dict(model)
-        for context_key, model in RUNTIME_MODEL_PARAMETERS.items()
     }

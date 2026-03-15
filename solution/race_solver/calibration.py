@@ -138,8 +138,6 @@ PROFILE_DEFAULTS = {
     ),
 }
 
-ModelSignatureValue = str | float | int
-
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -147,7 +145,7 @@ def parse_args() -> argparse.Namespace:
         "--profile",
         choices=tuple(PROFILE_DEFAULTS),
         default="full",
-        help="Deterministic search budget profile used for staged experimentation.",
+        help="Deterministic search budget profile used for staged iteration.",
     )
     parser.add_argument("--sample-size", type=int, default=None)
     parser.add_argument("--coarse-passes", type=int, default=None)
@@ -155,12 +153,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-races", type=int, default=None)
     parser.add_argument(
         "--context-split",
-        choices=("global", "runtime_split", "medium_split"),
+        choices=("global", "runtime_split"),
         default="runtime_split",
-        help=(
-            "Fit one global model or the current runtime context split. "
-            "`medium_split` remains as a backwards-compatible alias."
-        ),
+        help="Fit one global model or the current runtime context split.",
     )
     return parser.parse_args()
 
@@ -185,9 +180,8 @@ def resolve_profile(args: argparse.Namespace) -> CalibrationProfile:
     )
 
 
-def model_signature(model: ModelParameters) -> tuple[ModelSignatureValue, ...]:
-    signature: list[ModelSignatureValue] = [
-        model.scorer_family,
+def model_signature(model: ModelParameters) -> tuple[float | int, ...]:
+    signature: list[float | int] = [
         round(model.lap_progress_pace_scale, 6),
         round(model.post_stop_opening_bias_scale, 6),
     ]
@@ -209,7 +203,7 @@ def model_signature(model: ModelParameters) -> tuple[ModelSignatureValue, ...]:
 def evaluate_model(
     races: list[HistoricalRace],
     model: ModelParameters,
-    cache: dict[tuple[ModelSignatureValue, ...], Evaluation],
+    cache: dict[tuple[float | int, ...], Evaluation],
 ) -> Evaluation:
     signature = model_signature(model)
     cached = cache.get(signature)
@@ -333,7 +327,7 @@ def next_directional_value(
 
 def append_checkpoint(
     checkpoints: list[ModelParameters],
-    seen_signatures: set[tuple[ModelSignatureValue, ...]],
+    seen_signatures: set[tuple[float | int, ...]],
     model: ModelParameters,
 ) -> None:
     signature = model_signature(model)
@@ -370,10 +364,10 @@ def coarse_search(
     coarse_passes: int,
 ) -> SearchResult:
     current_model = starting_model
-    cache: dict[tuple[ModelSignatureValue, ...], Evaluation] = {}
+    cache: dict[tuple[float | int, ...], Evaluation] = {}
     current_eval = evaluate_model(training_sample, current_model, cache)
     checkpoints: list[ModelParameters] = []
-    seen_signatures: set[tuple[ModelSignatureValue, ...]] = set()
+    seen_signatures: set[tuple[float | int, ...]] = set()
     append_checkpoint(checkpoints, seen_signatures, current_model)
 
     for pass_index in range(coarse_passes):
@@ -411,10 +405,10 @@ def refine_search(
     refine_passes: int,
 ) -> SearchResult:
     current_model = starting_model
-    cache: dict[tuple[ModelSignatureValue, ...], Evaluation] = {}
+    cache: dict[tuple[float | int, ...], Evaluation] = {}
     current_eval = evaluate_model(full_training, current_model, cache)
     checkpoints: list[ModelParameters] = []
-    seen_signatures: set[tuple[ModelSignatureValue, ...]] = set()
+    seen_signatures: set[tuple[float | int, ...]] = set()
     append_checkpoint(checkpoints, seen_signatures, current_model)
 
     for pass_index in range(refine_passes):
@@ -507,8 +501,8 @@ def select_validation_model(
     training_races: list[HistoricalRace],
     validation_races: list[HistoricalRace],
 ) -> tuple[ModelParameters, Evaluation, Evaluation]:
-    training_cache: dict[tuple[ModelSignatureValue, ...], Evaluation] = {}
-    validation_cache: dict[tuple[ModelSignatureValue, ...], Evaluation] = {}
+    training_cache: dict[tuple[float | int, ...], Evaluation] = {}
+    validation_cache: dict[tuple[float | int, ...], Evaluation] = {}
     best_model = candidates[0]
     best_train_eval = evaluate_model(training_races, best_model, training_cache)
     best_validation_eval = evaluate_model(validation_races, best_model, validation_cache)
@@ -558,7 +552,7 @@ def fit_best_model(
         refine_passes=profile.refine_passes,
     )
     candidate_models: list[ModelParameters] = []
-    seen_signatures: set[tuple[ModelSignatureValue, ...]] = set()
+    seen_signatures: set[tuple[float | int, ...]] = set()
     for candidate in (
         starting_model,
         *coarse_result.checkpoints,
@@ -623,11 +617,6 @@ def evaluate_context_models(
 def main() -> None:
     args = parse_args()
     profile = resolve_profile(args)
-    effective_context_split = (
-        "runtime_split"
-        if args.context_split == "medium_split"
-        else args.context_split
-    )
     all_races = load_historical_races(max_races=profile.max_races)
     training_races, validation_races = split_races(all_races)
 
@@ -643,9 +632,9 @@ def main() -> None:
         f"coarse_passes={profile.coarse_passes}, "
         f"refine_passes={profile.refine_passes})"
     )
-    print(f"context_split: {effective_context_split}")
+    print(f"context_split: {args.context_split}")
 
-    if effective_context_split == "global":
+    if args.context_split == "global":
         fit_result = fit_best_model(
             training_races=training_races,
             validation_races=validation_races,

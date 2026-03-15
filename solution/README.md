@@ -47,12 +47,6 @@ The solver is organized so each file answers one question:
 - Analysis stays separate from runtime, so we can explore the historical data without bloating the submission path.
 - Calibration and prediction use a direct total-time scorer, while explanation
   tools still use the richer score-breakdown path for human-readable analysis.
-- The scorer now has an explicit family boundary:
-  the runtime model carries a `scorer_family` key, and `race_solver/scoring.py`
-  dispatches through a small scorer registry. The current production family is
-  still the nonlinear wear model, but future structural scorer experiments can
-  plug into that seam without rewriting calibration, reporting, and runtime
-  all at once.
 - The v1 scoring model uses numeric race context (`base_lap_time`, `pit_lane_time`, `track_temp`, `total_laps`) and currently ignores the `track` name because the numeric fields are what directly alter the computed score.
 - The current wear model treats age beyond the grace window as a degradation
   state and applies a nonlinear penalty to that state, which proved much

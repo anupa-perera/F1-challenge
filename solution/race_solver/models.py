@@ -11,7 +11,6 @@ from typing import Mapping
 
 
 COMPOUND_ORDER = ("SOFT", "MEDIUM", "HARD")
-NONLINEAR_WEAR_SCORER_FAMILY = "nonlinear_wear_v1"
 
 
 @dataclass(frozen=True)
@@ -61,7 +60,6 @@ class ModelParameters:
     compounds: Mapping[str, CompoundParameters]
     lap_progress_pace_scale: float
     post_stop_opening_bias_scale: float = 0.0
-    scorer_family: str = NONLINEAR_WEAR_SCORER_FAMILY
 
 
 @dataclass(frozen=True)
