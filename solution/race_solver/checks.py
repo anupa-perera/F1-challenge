@@ -100,6 +100,7 @@ def run_self_checks() -> None:
     medium_high_pit_hot_fast_slow_hot_race = RaceConfig("MediumHighPitHotFastSlowHot", 45, 84.0, 22.5, 38)
     medium_high_pit_hot_fast_slow_race = RaceConfig("MediumHighPitHotFastSlow", 45, 84.0, 22.5, 39)
     medium_other_hot_race = RaceConfig("MediumOtherHot", 45, 91.0, 21.0, 38)
+    medium_other_hot_fast_mid_fast_race = RaceConfig("MediumOtherHotFastMidFast", 45, 84.0, 21.0, 38)
     medium_other_hot_fast_mid_race = RaceConfig("MediumOtherHotFastMid", 45, 89.0, 21.0, 38)
     long_non_medium_race = RaceConfig("LongNonMedium", 60, 87.5, 21.0, 30)
     assert runtime_parent_context_key(short_cool_mild_race) == "non_medium"
@@ -110,6 +111,7 @@ def run_self_checks() -> None:
     assert runtime_parent_context_key(medium_high_pit_hot_fast_slow_race) == "medium_high_pit"
     assert runtime_parent_context_key(medium_high_pit_hot_race) == "medium_high_pit"
     assert runtime_parent_context_key(medium_high_pit_race) == "medium_high_pit"
+    assert runtime_parent_context_key(medium_other_hot_fast_mid_fast_race) == "medium_other"
     assert runtime_parent_context_key(medium_other_hot_fast_mid_race) == "medium_other"
     assert runtime_parent_context_key(medium_other_hot_race) == "medium_other"
     assert runtime_parent_context_key(medium_race) == "medium_other"
@@ -122,6 +124,7 @@ def run_self_checks() -> None:
     assert runtime_context_key(medium_high_pit_hot_fast_slow_race) == "medium_high_pit_hot_fast_slow"
     assert runtime_context_key(medium_high_pit_hot_race) == "medium_high_pit_hot"
     assert runtime_context_key(medium_high_pit_race) == "medium_high_pit"
+    assert runtime_context_key(medium_other_hot_fast_mid_fast_race) == "medium_other_hot_fast_mid_fast"
     assert runtime_context_key(medium_other_hot_fast_mid_race) == "medium_other_hot_fast_mid"
     assert runtime_context_key(medium_other_hot_race) == "medium_other_hot"
     assert runtime_context_key(medium_race) == "medium_other"
@@ -134,6 +137,7 @@ def run_self_checks() -> None:
     assert runtime_model_for_config(medium_high_pit_hot_fast_slow_hot_race) != runtime_model_for_config(medium_high_pit_hot_fast_slow_race)
     assert runtime_model_for_config(medium_high_pit_hot_fast_slow_race) != runtime_model_for_config(medium_high_pit_hot_race)
     assert runtime_model_for_config(medium_high_pit_hot_race) != runtime_model_for_config(medium_high_pit_race)
+    assert runtime_model_for_config(medium_other_hot_fast_mid_fast_race) != runtime_model_for_config(medium_other_hot_fast_mid_race)
     assert runtime_model_for_config(medium_other_hot_fast_mid_race) != runtime_model_for_config(medium_other_hot_race)
     assert runtime_model_for_config(medium_other_hot_race) != runtime_model_for_config(medium_race)
     assert runtime_model_for_config(short_cool_mild_race) != runtime_model_for_config(short_race)

@@ -320,6 +320,37 @@ MEDIUM_OTHER_HOT_FAST_MID_MODEL_PARAMETERS = ModelParameters(
 )
 
 
+MEDIUM_OTHER_HOT_FAST_MID_FAST_MODEL_PARAMETERS = ModelParameters(
+    compounds={
+        "SOFT": CompoundParameters(
+            pace_offset=-1.0,
+            grace_laps=5,
+            deg_rate=0.115,
+            temp_pace_scale=-0.0,
+            temp_deg_scale=0.05,
+            race_length_deg_scale=0.05,
+        ),
+        "MEDIUM": CompoundParameters(
+            pace_offset=0.75,
+            grace_laps=14,
+            deg_rate=0.045,
+            temp_pace_scale=-0.15,
+            temp_deg_scale=-0.0,
+            race_length_deg_scale=0.1,
+        ),
+        "HARD": CompoundParameters(
+            pace_offset=1.5,
+            grace_laps=23,
+            deg_rate=0.018,
+            temp_pace_scale=0.025,
+            temp_deg_scale=0.15,
+            race_length_deg_scale=0.15,
+        ),
+    },
+    lap_progress_pace_scale=0.025,
+)
+
+
 MEDIUM_OTHER_HOT_MODEL_PARAMETERS = ModelParameters(
     compounds={
         "SOFT": CompoundParameters(
@@ -463,6 +494,7 @@ RUNTIME_CONTEXT_ORDER = (
     "medium_high_pit_hot_fast_slow",
     "medium_high_pit_hot",
     "medium_high_pit",
+    "medium_other_hot_fast_mid_fast",
     "medium_other_hot_fast_mid",
     "medium_other_hot",
     "medium_other",
@@ -484,6 +516,7 @@ RUNTIME_CHILDREN_BY_PARENT = {
         "medium_high_pit",
     ),
     "medium_other": (
+        "medium_other_hot_fast_mid_fast",
         "medium_other_hot_fast_mid",
         "medium_other_hot",
         "medium_other",
@@ -512,6 +545,7 @@ RUNTIME_FALLBACK_CONTEXT_BY_CHILD = {
     "medium_high_pit": "medium_high_pit",
     # The same logic applies to the non-high-pit hot branch.
     "medium_other_hot_fast_mid": "medium_other_hot",
+    "medium_other_hot_fast_mid_fast": "medium_other_hot_fast_mid",
     "medium_other_hot": "medium_other",
     "medium_other": "medium_other",
     # Short non-medium races are the earned child; the long/global fit remains
@@ -582,6 +616,8 @@ def runtime_context_key(config: RaceConfig) -> str:
     if parent_key == "medium_other":
         if config.track_temp >= 37:
             if config.base_lap_time <= 90.0:
+                if config.base_lap_time < 85.0:
+                    return "medium_other_hot_fast_mid_fast"
                 return "medium_other_hot_fast_mid"
             return "medium_other_hot"
         return "medium_other"
@@ -600,6 +636,7 @@ RUNTIME_MODEL_PARAMETERS = {
     "medium_high_pit_hot_fast_slow": MEDIUM_HIGH_PIT_HOT_FAST_SLOW_MODEL_PARAMETERS,
     "medium_high_pit_hot": MEDIUM_HIGH_PIT_HOT_MODEL_PARAMETERS,
     "medium_high_pit": MEDIUM_HIGH_PIT_MODEL_PARAMETERS,
+    "medium_other_hot_fast_mid_fast": MEDIUM_OTHER_HOT_FAST_MID_FAST_MODEL_PARAMETERS,
     "medium_other_hot_fast_mid": MEDIUM_OTHER_HOT_FAST_MID_MODEL_PARAMETERS,
     "medium_other_hot": MEDIUM_OTHER_HOT_MODEL_PARAMETERS,
     "medium_other": MEDIUM_OTHER_MODEL_PARAMETERS,
