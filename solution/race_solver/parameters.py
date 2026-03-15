@@ -134,14 +134,46 @@ MEDIUM_OTHER_MODEL_PARAMETERS = ModelParameters(
 )
 
 
-NON_MEDIUM_MODEL_PARAMETERS = DEFAULT_MODEL_PARAMETERS
+SHORT_NON_MEDIUM_MODEL_PARAMETERS = ModelParameters(
+    compounds={
+        "SOFT": CompoundParameters(
+            pace_offset=-1.4,
+            grace_laps=4,
+            deg_rate=0.1,
+            temp_pace_scale=-0.025,
+            temp_deg_scale=-0.075,
+            race_length_deg_scale=0.2,
+        ),
+        "MEDIUM": CompoundParameters(
+            pace_offset=0.25,
+            grace_laps=13,
+            deg_rate=0.04,
+            temp_pace_scale=0.025,
+            temp_deg_scale=0.075,
+            race_length_deg_scale=0.025,
+        ),
+        "HARD": CompoundParameters(
+            pace_offset=1.5,
+            grace_laps=26,
+            deg_rate=0.015,
+            temp_pace_scale=0.0,
+            temp_deg_scale=-0.025,
+            race_length_deg_scale=0.125,
+        ),
+    },
+    lap_progress_pace_scale=0.0,
+)
+
+
+LONG_NON_MEDIUM_MODEL_PARAMETERS = DEFAULT_MODEL_PARAMETERS
 
 
 RUNTIME_CONTEXT_ORDER = (
     "medium_cool",
     "medium_high_pit",
     "medium_other",
-    "non_medium",
+    "short_non_medium",
+    "long_non_medium",
 )
 
 
@@ -150,8 +182,8 @@ def runtime_context_key(config: RaceConfig) -> str:
 
     The strongest residual signals after the nonlinear wear upgrade are that
     medium-length cool races behave differently from the rest of the medium
-    pack, and that high pit-burden medium races also benefit from their own
-    fit. Short and long races still share the stronger non-medium fit.
+    pack, high pit-burden medium races also benefit from their own fit, and
+    non-medium races no longer collapse short and long regimes into one bucket.
     """
 
     if 37 <= config.total_laps <= 52 and config.track_temp <= 25:
@@ -160,14 +192,17 @@ def runtime_context_key(config: RaceConfig) -> str:
         return "medium_high_pit"
     if 37 <= config.total_laps <= 52:
         return "medium_other"
-    return "non_medium"
+    if config.total_laps < 37:
+        return "short_non_medium"
+    return "long_non_medium"
 
 
 RUNTIME_MODEL_PARAMETERS = {
     "medium_cool": MEDIUM_COOL_MODEL_PARAMETERS,
     "medium_high_pit": MEDIUM_HIGH_PIT_MODEL_PARAMETERS,
     "medium_other": MEDIUM_OTHER_MODEL_PARAMETERS,
-    "non_medium": NON_MEDIUM_MODEL_PARAMETERS,
+    "short_non_medium": SHORT_NON_MEDIUM_MODEL_PARAMETERS,
+    "long_non_medium": LONG_NON_MEDIUM_MODEL_PARAMETERS,
 }
 
 

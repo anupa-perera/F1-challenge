@@ -86,17 +86,20 @@ def run_self_checks() -> None:
     assert sequence_order_emphasis(config) == 1.0
     assert abs(sequence_order_emphasis(RaceConfig("Edge", 37, 87.5, 21.0, 30)) - 0.4) < 1e-9
     assert sequence_order_emphasis(long_race) == 0.0
-    assert runtime_context_key(short_race) == "non_medium"
-    assert runtime_context_key(config) == "non_medium"
+    assert runtime_context_key(short_race) == "short_non_medium"
+    assert runtime_context_key(config) == "short_non_medium"
     medium_race = RaceConfig("Medium", 45, 87.5, 21.0, 30)
     medium_cool_race = RaceConfig("MediumCool", 45, 87.5, 21.0, 24)
     medium_high_pit_race = RaceConfig("MediumHighPit", 45, 87.5, 22.5, 30)
+    long_non_medium_race = RaceConfig("LongNonMedium", 60, 87.5, 21.0, 30)
     assert runtime_context_key(medium_cool_race) == "medium_cool"
     assert runtime_context_key(medium_high_pit_race) == "medium_high_pit"
     assert runtime_context_key(medium_race) == "medium_other"
+    assert runtime_context_key(long_non_medium_race) == "long_non_medium"
     assert runtime_model_for_config(medium_race) != runtime_model_for_config(short_race)
     assert runtime_model_for_config(medium_cool_race) != runtime_model_for_config(medium_race)
     assert runtime_model_for_config(medium_high_pit_race) != runtime_model_for_config(medium_race)
+    assert runtime_model_for_config(short_race) != runtime_model_for_config(long_non_medium_race)
 
     identical_plans = (
         build_driver_plan(

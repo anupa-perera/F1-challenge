@@ -55,7 +55,8 @@ The solver is organized so each file answers one question:
   medium-length cool races use a dedicated parameter set,
   medium-length high pit-burden races use their own fit,
   other medium-length races use their own fit,
-  and short/long races share the strongest non-medium fit.
+  short non-medium races use their own fit,
+  and long non-medium races keep their own fit.
 
 ## Workflow
 
@@ -66,8 +67,9 @@ The solver is organized so each file answers one question:
    `--profile fast` for trying ideas cheaply,
    `--profile medium` before spending a full run,
    and `--profile full` as the only commit-worthy gate.
-   By default calibration now fits the runtime four-way split
-   (`medium_cool`, `medium_high_pit`, `medium_other`, `non_medium`);
+   By default calibration now fits the runtime five-way split
+   (`medium_cool`, `medium_high_pit`, `medium_other`,
+   `short_non_medium`, `long_non_medium`);
    pass `--context-split global` to compare against the
    single-model baseline.
 3. Freeze the best parameters back into `race_solver/parameters.py`.
