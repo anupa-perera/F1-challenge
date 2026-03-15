@@ -41,7 +41,7 @@ DEFAULT_MODEL_PARAMETERS = ModelParameters(
 )
 
 
-MEDIUM_COOL_MODEL_PARAMETERS = ModelParameters(
+MEDIUM_COOL_SLOW_MODEL_PARAMETERS = ModelParameters(
     compounds={
         "SOFT": CompoundParameters(
             pace_offset=-1.45,
@@ -65,6 +65,37 @@ MEDIUM_COOL_MODEL_PARAMETERS = ModelParameters(
             deg_rate=0.015,
             temp_pace_scale=0.1,
             temp_deg_scale=0.125,
+            race_length_deg_scale=0.125,
+        ),
+    },
+    lap_progress_pace_scale=0.0,
+)
+
+
+MEDIUM_COOL_FAST_MID_MODEL_PARAMETERS = ModelParameters(
+    compounds={
+        "SOFT": CompoundParameters(
+            pace_offset=-1.5,
+            grace_laps=4,
+            deg_rate=0.08,
+            temp_pace_scale=0.15,
+            temp_deg_scale=0.2,
+            race_length_deg_scale=0.1,
+        ),
+        "MEDIUM": CompoundParameters(
+            pace_offset=0.45,
+            grace_laps=15,
+            deg_rate=0.04,
+            temp_pace_scale=-0.1,
+            temp_deg_scale=0.2,
+            race_length_deg_scale=0.05,
+        ),
+        "HARD": CompoundParameters(
+            pace_offset=1.5,
+            grace_laps=23,
+            deg_rate=0.015,
+            temp_pace_scale=0.1,
+            temp_deg_scale=0.2,
             race_length_deg_scale=0.125,
         ),
     },
@@ -231,7 +262,8 @@ LONG_NON_MEDIUM_MODEL_PARAMETERS = DEFAULT_MODEL_PARAMETERS
 
 
 RUNTIME_CONTEXT_ORDER = (
-    "medium_cool",
+    "medium_cool_fast_mid",
+    "medium_cool_slow",
     "medium_high_pit_hot",
     "medium_high_pit",
     "medium_other_hot",
@@ -245,16 +277,17 @@ def runtime_context_key(config: RaceConfig) -> str:
     """Bucket races into the smallest context split that the data supports.
 
     The strongest residual signals after the nonlinear wear upgrade are that
-    medium-length cool races behave differently from the rest of the medium
-    pack, hot medium races need their own high-pit and non-high-pit fits,
-    and non-medium races no longer collapse short and long regimes into one
-    bucket.
+    medium-length cool races split again by track-speed proxy, hot medium
+    races need their own high-pit and non-high-pit fits, and non-medium races
+    no longer collapse short and long regimes into one bucket.
     """
 
     if 37 <= config.total_laps <= 52:
         pit_burden = config.pit_lane_time / config.base_lap_time
         if config.track_temp <= 25:
-            return "medium_cool"
+            if config.base_lap_time <= 90.0:
+                return "medium_cool_fast_mid"
+            return "medium_cool_slow"
         if pit_burden > 0.255 and config.track_temp >= 37:
             return "medium_high_pit_hot"
         if pit_burden > 0.255:
@@ -268,7 +301,8 @@ def runtime_context_key(config: RaceConfig) -> str:
 
 
 RUNTIME_MODEL_PARAMETERS = {
-    "medium_cool": MEDIUM_COOL_MODEL_PARAMETERS,
+    "medium_cool_fast_mid": MEDIUM_COOL_FAST_MID_MODEL_PARAMETERS,
+    "medium_cool_slow": MEDIUM_COOL_SLOW_MODEL_PARAMETERS,
     "medium_high_pit_hot": MEDIUM_HIGH_PIT_HOT_MODEL_PARAMETERS,
     "medium_high_pit": MEDIUM_HIGH_PIT_MODEL_PARAMETERS,
     "medium_other_hot": MEDIUM_OTHER_HOT_MODEL_PARAMETERS,

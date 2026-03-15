@@ -52,7 +52,8 @@ The solver is organized so each file answers one question:
   state and applies a nonlinear penalty to that state, which proved much
   stronger than the earlier direct age-overage penalty.
 - Runtime now uses a deterministic context gate:
-  medium-length cool races use a dedicated parameter set,
+  medium-length cool fast/mid tracks use a dedicated parameter set,
+  medium-length cool slow tracks use their own fit,
   hot medium-length high pit-burden races use their own fit,
   medium-length high pit-burden races use their own fit,
   hot medium-length non-high-pit races use their own fit,
@@ -69,10 +70,11 @@ The solver is organized so each file answers one question:
    `--profile fast` for trying ideas cheaply,
    `--profile medium` before spending a full run,
    and `--profile full` as the only commit-worthy gate.
-   By default calibration now fits the runtime seven-way split
-   (`medium_cool`, `medium_high_pit_hot`, `medium_high_pit`,
-   `medium_other_hot`, `medium_other`, `short_non_medium`,
-   `long_non_medium`);
+   By default calibration now fits the runtime eight-way split
+   (`medium_cool_fast_mid`, `medium_cool_slow`,
+   `medium_high_pit_hot`, `medium_high_pit`,
+   `medium_other_hot`, `medium_other`,
+   `short_non_medium`, `long_non_medium`);
    pass `--context-split global` to compare against the
    single-model baseline.
 3. Freeze the best parameters back into `race_solver/parameters.py`.
