@@ -170,6 +170,38 @@ MEDIUM_HIGH_PIT_MODEL_PARAMETERS = ModelParameters(
 )
 
 
+MEDIUM_HIGH_PIT_COOL_MODEL_PARAMETERS = ModelParameters(
+    compounds={
+        "SOFT": CompoundParameters(
+            pace_offset=-1.55,
+            grace_laps=5,
+            deg_rate=0.1,
+            temp_pace_scale=0.2,
+            temp_deg_scale=0.15,
+            race_length_deg_scale=0.1,
+        ),
+        "MEDIUM": CompoundParameters(
+            pace_offset=0.55,
+            grace_laps=16,
+            deg_rate=0.05,
+            temp_pace_scale=-0.2,
+            temp_deg_scale=0.2,
+            race_length_deg_scale=0.05,
+        ),
+        "HARD": CompoundParameters(
+            pace_offset=1.55,
+            grace_laps=26,
+            deg_rate=0.025,
+            temp_pace_scale=0.05,
+            temp_deg_scale=0.15,
+            race_length_deg_scale=-0.0,
+        ),
+    },
+    lap_progress_pace_scale=0.05,
+    post_stop_opening_bias_scale=-0.0,
+)
+
+
 MEDIUM_HIGH_PIT_HOT_MODEL_PARAMETERS = ModelParameters(
     compounds={
         "SOFT": CompoundParameters(
@@ -525,6 +557,7 @@ RUNTIME_MODEL_LIBRARY = {
     "medium_cool_fast_mid": MEDIUM_COOL_FAST_MID_MODEL_PARAMETERS,
     "medium_cool_slow_cool": MEDIUM_COOL_SLOW_COOL_MODEL_PARAMETERS,
     "medium_cool_slow": MEDIUM_COOL_SLOW_MODEL_PARAMETERS,
+    "medium_high_pit_cool": MEDIUM_HIGH_PIT_COOL_MODEL_PARAMETERS,
     "medium_high_pit_hot_fast_slow_hot": MEDIUM_HIGH_PIT_HOT_FAST_SLOW_HOT_MODEL_PARAMETERS,
     "medium_high_pit_hot_fast_slow": MEDIUM_HIGH_PIT_HOT_FAST_SLOW_MODEL_PARAMETERS,
     "medium_high_pit_hot": MEDIUM_HIGH_PIT_HOT_MODEL_PARAMETERS,

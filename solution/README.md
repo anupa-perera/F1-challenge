@@ -77,6 +77,7 @@ The solver is organized so each file answers one question:
   - very short races route to `short_non_medium`
   - short warm races route to `short_warm`
   - short shoulder races route to `short_cool_mild`
+  - cooler medium-long races route to `medium_high_pit_cool`
   - the main medium-long band routes to `medium_high_pit`
   - hotter medium-long races route to `medium_high_pit_hot`
   - cooler long-shoulder races route to `medium_cool_slow_cool`
@@ -96,7 +97,7 @@ The solver is organized so each file answers one question:
    and `--profile full` as the only commit-worthy gate.
    By default calibration now fits the current runtime seven-way split
    (`short_non_medium`, `short_warm`, `short_cool_mild`,
-   `medium_high_pit`, `medium_high_pit_hot`,
+   `medium_high_pit_cool`, `medium_high_pit`, `medium_high_pit_hot`,
    `medium_cool_slow_cool`, `long_non_medium`).
    Each active runtime leaf now starts from its currently frozen leaf model
    instead of restarting from the global baseline, so fitting improves the live
