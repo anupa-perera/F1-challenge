@@ -53,7 +53,9 @@ The solver is organized so each file answers one question:
   stronger than the earlier direct age-overage penalty.
 - Runtime now uses a deterministic context gate:
   medium-length cool fast/mid tracks use a dedicated parameter set,
+  medium-length cool slow tracks with milder temperatures use their own fit,
   medium-length cool slow tracks use their own fit,
+  hot medium-length high pit-burden fast/slow tracks with lower hot temperatures use their own fit,
   hot medium-length high pit-burden fast/slow tracks use their own fit,
   hot medium-length high pit-burden races use their own fit,
   medium-length high pit-burden races use their own fit,
@@ -77,9 +79,10 @@ The solver is organized so each file answers one question:
    `--profile fast` for trying ideas cheaply,
    `--profile medium` before spending a full run,
    and `--profile full` as the only commit-worthy gate.
-   By default calibration now fits the runtime eleven-way split
-   (`medium_cool_fast_mid`, `medium_cool_slow`,
-   `medium_high_pit_hot_fast_slow`, `medium_high_pit_hot`,
+   By default calibration now fits the runtime thirteen-way split
+   (`medium_cool_fast_mid`, `medium_cool_slow_cool`, `medium_cool_slow`,
+   `medium_high_pit_hot_fast_slow_hot`, `medium_high_pit_hot_fast_slow`,
+   `medium_high_pit_hot`,
    `medium_high_pit`,
    `medium_other_hot_fast_mid`, `medium_other_hot`,
    `medium_other`,

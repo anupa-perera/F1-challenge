@@ -72,6 +72,37 @@ MEDIUM_COOL_SLOW_MODEL_PARAMETERS = ModelParameters(
 )
 
 
+MEDIUM_COOL_SLOW_COOL_MODEL_PARAMETERS = ModelParameters(
+    compounds={
+        "SOFT": CompoundParameters(
+            pace_offset=-1.5,
+            grace_laps=4,
+            deg_rate=0.085,
+            temp_pace_scale=0.05,
+            temp_deg_scale=0.2,
+            race_length_deg_scale=0.05,
+        ),
+        "MEDIUM": CompoundParameters(
+            pace_offset=0.5,
+            grace_laps=15,
+            deg_rate=0.04,
+            temp_pace_scale=-0.125,
+            temp_deg_scale=0.15,
+            race_length_deg_scale=0.05,
+        ),
+        "HARD": CompoundParameters(
+            pace_offset=1.45,
+            grace_laps=23,
+            deg_rate=0.015,
+            temp_pace_scale=0.1,
+            temp_deg_scale=0.125,
+            race_length_deg_scale=0.125,
+        ),
+    },
+    lap_progress_pace_scale=0.0,
+)
+
+
 MEDIUM_COOL_FAST_MID_MODEL_PARAMETERS = ModelParameters(
     compounds={
         "SOFT": CompoundParameters(
@@ -188,6 +219,37 @@ MEDIUM_HIGH_PIT_HOT_FAST_SLOW_MODEL_PARAMETERS = ModelParameters(
             grace_laps=22,
             deg_rate=0.018,
             temp_pace_scale=0.0,
+            temp_deg_scale=-0.05,
+            race_length_deg_scale=0.2,
+        ),
+    },
+    lap_progress_pace_scale=0.025,
+)
+
+
+MEDIUM_HIGH_PIT_HOT_FAST_SLOW_HOT_MODEL_PARAMETERS = ModelParameters(
+    compounds={
+        "SOFT": CompoundParameters(
+            pace_offset=-1.0,
+            grace_laps=5,
+            deg_rate=0.11,
+            temp_pace_scale=0.15,
+            temp_deg_scale=0.05,
+            race_length_deg_scale=0.05,
+        ),
+        "MEDIUM": CompoundParameters(
+            pace_offset=0.65,
+            grace_laps=14,
+            deg_rate=0.045,
+            temp_pace_scale=-0.025,
+            temp_deg_scale=-0.15,
+            race_length_deg_scale=0.1,
+        ),
+        "HARD": CompoundParameters(
+            pace_offset=1.5,
+            grace_laps=22,
+            deg_rate=0.018,
+            temp_pace_scale=-0.05,
             temp_deg_scale=-0.05,
             race_length_deg_scale=0.2,
         ),
@@ -395,7 +457,9 @@ RUNTIME_PARENT_CONTEXT_ORDER = (
 
 RUNTIME_CONTEXT_ORDER = (
     "medium_cool_fast_mid",
+    "medium_cool_slow_cool",
     "medium_cool_slow",
+    "medium_high_pit_hot_fast_slow_hot",
     "medium_high_pit_hot_fast_slow",
     "medium_high_pit_hot",
     "medium_high_pit",
@@ -408,8 +472,13 @@ RUNTIME_CONTEXT_ORDER = (
 )
 
 RUNTIME_CHILDREN_BY_PARENT = {
-    "medium_cool": ("medium_cool_fast_mid", "medium_cool_slow"),
+    "medium_cool": (
+        "medium_cool_fast_mid",
+        "medium_cool_slow_cool",
+        "medium_cool_slow",
+    ),
     "medium_high_pit": (
+        "medium_high_pit_hot_fast_slow_hot",
         "medium_high_pit_hot_fast_slow",
         "medium_high_pit_hot",
         "medium_high_pit",
@@ -433,9 +502,11 @@ RUNTIME_FALLBACK_CONTEXT_BY_CHILD = {
     # If we ever drop that specialization, they should fall back to the slower
     # cool fit that originally covered the whole parent bucket.
     "medium_cool_fast_mid": "medium_cool_slow",
+    "medium_cool_slow_cool": "medium_cool_slow",
     "medium_cool_slow": "medium_cool_slow",
     # Hot high-pit races first split away from the broader high-pit parent, and
     # only then did the fast/slow edge cases earn their own child bucket.
+    "medium_high_pit_hot_fast_slow_hot": "medium_high_pit_hot_fast_slow",
     "medium_high_pit_hot_fast_slow": "medium_high_pit_hot",
     "medium_high_pit_hot": "medium_high_pit",
     "medium_high_pit": "medium_high_pit",
@@ -497,10 +568,14 @@ def runtime_context_key(config: RaceConfig) -> str:
     if parent_key == "medium_cool":
         if config.base_lap_time <= 90.0:
             return "medium_cool_fast_mid"
+        if config.track_temp > 22:
+            return "medium_cool_slow_cool"
         return "medium_cool_slow"
     if parent_key == "medium_high_pit":
         if config.track_temp >= 37:
             if config.base_lap_time < 85.0 or config.base_lap_time > 90.0:
+                if config.track_temp <= 38:
+                    return "medium_high_pit_hot_fast_slow_hot"
                 return "medium_high_pit_hot_fast_slow"
             return "medium_high_pit_hot"
         return "medium_high_pit"
@@ -519,7 +594,9 @@ def runtime_context_key(config: RaceConfig) -> str:
 
 RUNTIME_MODEL_PARAMETERS = {
     "medium_cool_fast_mid": MEDIUM_COOL_FAST_MID_MODEL_PARAMETERS,
+    "medium_cool_slow_cool": MEDIUM_COOL_SLOW_COOL_MODEL_PARAMETERS,
     "medium_cool_slow": MEDIUM_COOL_SLOW_MODEL_PARAMETERS,
+    "medium_high_pit_hot_fast_slow_hot": MEDIUM_HIGH_PIT_HOT_FAST_SLOW_HOT_MODEL_PARAMETERS,
     "medium_high_pit_hot_fast_slow": MEDIUM_HIGH_PIT_HOT_FAST_SLOW_MODEL_PARAMETERS,
     "medium_high_pit_hot": MEDIUM_HIGH_PIT_HOT_MODEL_PARAMETERS,
     "medium_high_pit": MEDIUM_HIGH_PIT_MODEL_PARAMETERS,
