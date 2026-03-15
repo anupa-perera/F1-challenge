@@ -365,6 +365,27 @@ RUNTIME_PARENT_BY_CHILD = {
     for child_key in child_keys
 }
 
+RUNTIME_FALLBACK_CONTEXT_BY_CHILD = {
+    # Fast/mid cool races only exist because the old cool fit underpriced them.
+    # If we ever drop that specialization, they should fall back to the slower
+    # cool fit that originally covered the whole parent bucket.
+    "medium_cool_fast_mid": "medium_cool_slow",
+    "medium_cool_slow": "medium_cool_slow",
+    # Hot high-pit races first split away from the broader high-pit parent, and
+    # only then did the fast/slow edge cases earn their own child bucket.
+    "medium_high_pit_hot_fast_slow": "medium_high_pit_hot",
+    "medium_high_pit_hot": "medium_high_pit",
+    "medium_high_pit": "medium_high_pit",
+    # The same logic applies to the non-high-pit hot branch.
+    "medium_other_hot_fast_mid": "medium_other_hot",
+    "medium_other_hot": "medium_other",
+    "medium_other": "medium_other",
+    # Short non-medium races are the earned child; the long/global fit remains
+    # the fallback that used to cover the entire non-medium parent.
+    "short_non_medium": "long_non_medium",
+    "long_non_medium": "long_non_medium",
+}
+
 
 def pit_burden(config: RaceConfig) -> float:
     """Normalize pit loss by lap time so tracks are comparable."""
@@ -448,6 +469,18 @@ def runtime_model_for_config(config: RaceConfig) -> ModelParameters:
     """Return the frozen runtime model for the race's validated context bucket."""
 
     return RUNTIME_MODEL_PARAMETERS[runtime_context_key(config)]
+
+
+def runtime_fallback_context_key(context_key: str) -> str:
+    """Return the less-specialized runtime bucket used as the local fallback."""
+
+    return RUNTIME_FALLBACK_CONTEXT_BY_CHILD[context_key]
+
+
+def runtime_fallback_model_for_context_key(context_key: str) -> ModelParameters:
+    """Return the model that would score the bucket if we removed that child."""
+
+    return RUNTIME_MODEL_PARAMETERS[runtime_fallback_context_key(context_key)]
 
 
 def replace_parameter(

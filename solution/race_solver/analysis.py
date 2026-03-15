@@ -15,6 +15,13 @@ import json
 from .historical_data import HistoricalRace
 from .models import DriverPlan
 from .parsing import parse_race_input
+from .parameters import (
+    RUNTIME_CONTEXT_ORDER,
+    RUNTIME_MODEL_PARAMETERS,
+    runtime_context_key,
+    runtime_fallback_context_key,
+    runtime_fallback_model_for_context_key,
+)
 from .reporting import first_divergence
 from .scoring import predict_finishing_order
 
@@ -103,6 +110,55 @@ class HistoricalResidualSummary:
     family_context_overrated: list[ResidualGroupSummary]
     family_context_underrated: list[ResidualGroupSummary]
     pairwise_confusions: list[PairwiseConfusionSummary]
+
+
+@dataclass(frozen=True)
+class RuntimeBucketValueSummary:
+    context_key: str
+    fallback_context_key: str
+    race_count: int
+    exact_matches: int
+    fallback_exact_matches: int
+    pairwise_rate: float
+    fallback_pairwise_rate: float
+
+    @property
+    def exact_gain(self) -> int:
+        return self.exact_matches - self.fallback_exact_matches
+
+    @property
+    def pairwise_gain(self) -> float:
+        return self.pairwise_rate - self.fallback_pairwise_rate
+
+
+@dataclass(frozen=True)
+class StrategyCrossoverSummary:
+    left_family: str
+    right_family: str
+    context_key: str
+    left_wins: int
+    right_wins: int
+
+    @property
+    def total(self) -> int:
+        return self.left_wins + self.right_wins
+
+    @property
+    def winner(self) -> str:
+        return self.left_family if self.left_wins >= self.right_wins else self.right_family
+
+    @property
+    def winner_rate(self) -> float:
+        if self.total == 0:
+            return 0.0
+        return max(self.left_wins, self.right_wins) / self.total
+
+
+DEFAULT_CROSSOVER_FAMILY_PAIRS = (
+    ("SOFT->HARD / 1 stop", "HARD->SOFT / 1 stop"),
+    ("MEDIUM->HARD / 1 stop", "HARD->MEDIUM / 1 stop"),
+    ("SOFT->MEDIUM / 1 stop", "MEDIUM->SOFT / 1 stop"),
+)
 
 
 def temp_bucket(track_temp: int) -> str:
@@ -339,6 +395,91 @@ def compare_case_directories(
     return comparisons, summarize_case_comparisons(comparisons)
 
 
+def evaluate_races_with_model(
+    races: list[HistoricalRace],
+    model,
+) -> tuple[int, float]:
+    """Score a list of races with one model and return exact/pairwise totals.
+
+    This helper exists for gate auditing: we want to ask whether a specialized
+    child bucket actually beats the simpler model it would fall back to.
+    """
+
+    exact_matches = 0
+    pairwise_correct = 0
+
+    for race in races:
+        predicted_order = predict_finishing_order(
+            config=race.config,
+            driver_plans=race.driver_plans,
+            model=model,
+        )
+        if tuple(predicted_order) == race.actual_order:
+            exact_matches += 1
+
+        predicted_rank = {
+            driver_id: index
+            for index, driver_id in enumerate(predicted_order)
+        }
+        for index, left_driver in enumerate(race.actual_order):
+            for right_driver in race.actual_order[index + 1 :]:
+                if predicted_rank[left_driver] < predicted_rank[right_driver]:
+                    pairwise_correct += 1
+
+    pairwise_total = len(races) * 190
+    pairwise_rate = 0.0 if pairwise_total == 0 else pairwise_correct / pairwise_total
+    return exact_matches, pairwise_rate
+
+
+def summarize_runtime_bucket_value(
+    races: list[HistoricalRace],
+) -> list[RuntimeBucketValueSummary]:
+    """Measure which child buckets actually earn their complexity.
+
+    Each summary compares the current specialized bucket to the less-specialized
+    fallback that would take over if we deleted that child from the gate.
+    """
+
+    summaries: list[RuntimeBucketValueSummary] = []
+    grouped_races = {context_key: [] for context_key in RUNTIME_CONTEXT_ORDER}
+    for race in races:
+        grouped_races[runtime_context_key(race.config)].append(race)
+
+    for context_key in RUNTIME_CONTEXT_ORDER:
+        context_races = grouped_races[context_key]
+        if not context_races:
+            continue
+        exact_matches, pairwise_rate = evaluate_races_with_model(
+            context_races,
+            RUNTIME_MODEL_PARAMETERS[context_key],
+        )
+        fallback_context_key = runtime_fallback_context_key(context_key)
+        fallback_exact_matches, fallback_pairwise_rate = evaluate_races_with_model(
+            context_races,
+            runtime_fallback_model_for_context_key(context_key),
+        )
+        summaries.append(
+            RuntimeBucketValueSummary(
+                context_key=context_key,
+                fallback_context_key=fallback_context_key,
+                race_count=len(context_races),
+                exact_matches=exact_matches,
+                fallback_exact_matches=fallback_exact_matches,
+                pairwise_rate=pairwise_rate,
+                fallback_pairwise_rate=fallback_pairwise_rate,
+            )
+        )
+
+    return sorted(
+        summaries,
+        key=lambda summary: (
+            -summary.exact_gain,
+            -summary.pairwise_gain,
+            -summary.race_count,
+        ),
+    )
+
+
 def extract_driver_residuals(
     races: list[HistoricalRace],
 ) -> list[DriverResidual]:
@@ -376,6 +517,65 @@ def extract_driver_residuals(
             )
 
     return residuals
+
+
+def summarize_strategy_crossovers(
+    races: list[HistoricalRace],
+    family_pairs: tuple[tuple[str, str], ...] = DEFAULT_CROSSOVER_FAMILY_PAIRS,
+    min_total: int = 20,
+) -> list[StrategyCrossoverSummary]:
+    """Summarize where mirrored one-stop families actually flip in history.
+
+    The best remaining modeling signal is often not a raw residual, but the
+    context where one strategy family overtakes its mirror. We measure that per
+    runtime bucket so the next gate refinement can be tied to an actual flip.
+    """
+
+    summaries: list[StrategyCrossoverSummary] = []
+
+    for left_family, right_family in family_pairs:
+        wins_by_context: dict[str, Counter[str]] = defaultdict(Counter)
+
+        for race in races:
+            family_to_driver_ids: dict[str, list[str]] = defaultdict(list)
+            for driver_plan in race.driver_plans:
+                family_to_driver_ids[strategy_family(driver_plan)].append(driver_plan.driver_id)
+
+            if not family_to_driver_ids[left_family] or not family_to_driver_ids[right_family]:
+                continue
+
+            actual_rank = {
+                driver_id: index
+                for index, driver_id in enumerate(race.actual_order)
+            }
+            left_best_rank = min(actual_rank[driver_id] for driver_id in family_to_driver_ids[left_family])
+            right_best_rank = min(actual_rank[driver_id] for driver_id in family_to_driver_ids[right_family])
+            context_key = runtime_context_key(race.config)
+
+            if left_best_rank < right_best_rank:
+                wins_by_context[context_key][left_family] += 1
+            else:
+                wins_by_context[context_key][right_family] += 1
+
+        for context_key, counts in wins_by_context.items():
+            left_wins = counts[left_family]
+            right_wins = counts[right_family]
+            if left_wins + right_wins < min_total:
+                continue
+            summaries.append(
+                StrategyCrossoverSummary(
+                    left_family=left_family,
+                    right_family=right_family,
+                    context_key=context_key,
+                    left_wins=left_wins,
+                    right_wins=right_wins,
+                )
+            )
+
+    return sorted(
+        summaries,
+        key=lambda summary: (-summary.total, summary.context_key, summary.left_family),
+    )
 
 
 def summarize_residual_groups(

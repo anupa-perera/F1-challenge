@@ -6,9 +6,12 @@ from __future__ import annotations
 import argparse
 
 from race_solver.analysis import (
+    DEFAULT_CROSSOVER_FAMILY_PAIRS,
     extract_winner_patterns,
     laps_bucket,
     pit_burden_bucket,
+    summarize_runtime_bucket_value,
+    summarize_strategy_crossovers,
     summarize_historical_residuals,
     summarize_start_band_usage,
     summarize_winner_patterns,
@@ -27,6 +30,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--top", type=int, default=10)
     parser.add_argument("--min-samples", type=int, default=50)
+    parser.add_argument("--min-crossover-total", type=int, default=20)
     return parser.parse_args()
 
 
@@ -53,6 +57,31 @@ def print_residual_group_summary(title: str, summaries: list[object]) -> None:
         print(f"    top_signatures={summary.top_signatures}")
 
 
+def print_runtime_bucket_value_summary(title: str, summaries: list[object]) -> None:
+    print(title)
+    for summary in summaries:
+        print(
+            f"  {summary.context_key}: races={summary.race_count}  "
+            f"exact={summary.exact_matches}  "
+            f"fallback={summary.fallback_exact_matches}  "
+            f"exact_gain={summary.exact_gain:+d}  "
+            f"pairwise_gain={summary.pairwise_gain:+.4%}  "
+            f"fallback_bucket={summary.fallback_context_key}"
+        )
+
+
+def print_strategy_crossover_summary(title: str, summaries: list[object]) -> None:
+    print(title)
+    for summary in summaries:
+        print(
+            f"  {summary.left_family} vs {summary.right_family}  "
+            f"context={summary.context_key}  "
+            f"{summary.left_wins}-{summary.right_wins}  "
+            f"winner={summary.winner}  "
+            f"winner_rate={summary.winner_rate:.1%}"
+        )
+
+
 def select_race_split(args: argparse.Namespace) -> tuple[str, list[object]]:
     all_races = load_historical_races(max_races=args.max_races)
     training_races, validation_races = split_races(all_races)
@@ -71,6 +100,12 @@ def main() -> None:
         races,
         top=args.top,
         min_samples=args.min_samples,
+    )
+    runtime_bucket_value = summarize_runtime_bucket_value(races)
+    crossover_summary = summarize_strategy_crossovers(
+        races,
+        family_pairs=DEFAULT_CROSSOVER_FAMILY_PAIRS,
+        min_total=args.min_crossover_total,
     )
 
     print(f"split={split_label} races={len(races)}")
@@ -130,6 +165,14 @@ def main() -> None:
             f"actual_ahead={summary.actual_ahead_family}  "
             f"context={summary.context_bucket}"
         )
+    print_runtime_bucket_value_summary(
+        "runtime_bucket_value_audit",
+        runtime_bucket_value,
+    )
+    print_strategy_crossover_summary(
+        "mirrored_family_crossovers",
+        crossover_summary,
+    )
 
 
 if __name__ == "__main__":
