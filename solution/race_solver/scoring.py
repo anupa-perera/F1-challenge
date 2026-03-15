@@ -140,7 +140,7 @@ def restart_opening_profile(compound: str) -> tuple[float, ...]:
     if compound == "SOFT":
         return (1.0, 0.25)
     if compound == "HARD":
-        return (1.0, 0.75, 0.25)
+        return (1.0, 0.75, 0.5)
     return (1.0, 0.5)
 
 
