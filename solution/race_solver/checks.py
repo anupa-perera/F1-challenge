@@ -5,6 +5,7 @@ from __future__ import annotations
 from .models import RaceConfig, Stint
 from .parameters import (
     DEFAULT_MODEL_PARAMETERS,
+    runtime_parent_context_key,
     runtime_context_key,
     runtime_model_for_config,
     replace_parameter,
@@ -86,6 +87,7 @@ def run_self_checks() -> None:
     assert sequence_order_emphasis(config) == 1.0
     assert abs(sequence_order_emphasis(RaceConfig("Edge", 37, 87.5, 21.0, 30)) - 0.4) < 1e-9
     assert sequence_order_emphasis(long_race) == 0.0
+    assert runtime_parent_context_key(short_race) == "non_medium"
     assert runtime_context_key(short_race) == "short_non_medium"
     assert runtime_context_key(config) == "short_non_medium"
     medium_race = RaceConfig("Medium", 45, 87.5, 21.0, 30)
@@ -95,6 +97,13 @@ def run_self_checks() -> None:
     medium_high_pit_hot_race = RaceConfig("MediumHighPitHot", 45, 87.5, 22.5, 38)
     medium_other_hot_race = RaceConfig("MediumOtherHot", 45, 87.5, 21.0, 38)
     long_non_medium_race = RaceConfig("LongNonMedium", 60, 87.5, 21.0, 30)
+    assert runtime_parent_context_key(medium_cool_fast_mid_race) == "medium_cool"
+    assert runtime_parent_context_key(medium_cool_slow_race) == "medium_cool"
+    assert runtime_parent_context_key(medium_high_pit_hot_race) == "medium_high_pit"
+    assert runtime_parent_context_key(medium_high_pit_race) == "medium_high_pit"
+    assert runtime_parent_context_key(medium_other_hot_race) == "medium_other"
+    assert runtime_parent_context_key(medium_race) == "medium_other"
+    assert runtime_parent_context_key(long_non_medium_race) == "non_medium"
     assert runtime_context_key(medium_cool_fast_mid_race) == "medium_cool_fast_mid"
     assert runtime_context_key(medium_cool_slow_race) == "medium_cool_slow"
     assert runtime_context_key(medium_high_pit_hot_race) == "medium_high_pit_hot"

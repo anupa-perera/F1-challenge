@@ -60,6 +60,10 @@ The solver is organized so each file answers one question:
   other medium-length races use their own fit,
   short non-medium races use their own fit,
   and long non-medium races keep their own fit.
+- The gate is hierarchical, not flat:
+  - parent fallbacks are `medium_cool`, `medium_high_pit`, `medium_other`, and `non_medium`
+  - child buckets only stay in the runtime path if they beat their parent on held-out history
+  - this lets us drop weak specializations later without changing the scorer
 
 ## Workflow
 

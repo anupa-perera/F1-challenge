@@ -261,6 +261,14 @@ SHORT_NON_MEDIUM_MODEL_PARAMETERS = ModelParameters(
 LONG_NON_MEDIUM_MODEL_PARAMETERS = DEFAULT_MODEL_PARAMETERS
 
 
+RUNTIME_PARENT_CONTEXT_ORDER = (
+    "medium_cool",
+    "medium_high_pit",
+    "medium_other",
+    "non_medium",
+)
+
+
 RUNTIME_CONTEXT_ORDER = (
     "medium_cool_fast_mid",
     "medium_cool_slow",
@@ -272,26 +280,72 @@ RUNTIME_CONTEXT_ORDER = (
     "long_non_medium",
 )
 
+RUNTIME_CHILDREN_BY_PARENT = {
+    "medium_cool": ("medium_cool_fast_mid", "medium_cool_slow"),
+    "medium_high_pit": ("medium_high_pit_hot", "medium_high_pit"),
+    "medium_other": ("medium_other_hot", "medium_other"),
+    "non_medium": ("short_non_medium", "long_non_medium"),
+}
+
+RUNTIME_PARENT_BY_CHILD = {
+    child_key: parent_key
+    for parent_key, child_keys in RUNTIME_CHILDREN_BY_PARENT.items()
+    for child_key in child_keys
+}
+
+
+def pit_burden(config: RaceConfig) -> float:
+    """Normalize pit loss by lap time so tracks are comparable."""
+
+    return config.pit_lane_time / config.base_lap_time
+
+
+def is_medium_length_race(config: RaceConfig) -> bool:
+    """The current solver treats 37-52 laps as the unstable middle regime."""
+
+    return 37 <= config.total_laps <= 52
+
+
+def runtime_parent_context_key(config: RaceConfig) -> str:
+    """Return the broad fallback bucket before any earned specialization.
+
+    This keeps the architecture honest: every child bucket should have a clear
+    parent regime that still makes sense on its own. If a child split stops
+    earning its keep, we can merge it back into this fallback without changing
+    the scorer itself.
+    """
+
+    if not is_medium_length_race(config):
+        return "non_medium"
+    if config.track_temp <= 25:
+        return "medium_cool"
+    if pit_burden(config) > 0.255:
+        return "medium_high_pit"
+    return "medium_other"
+
 
 def runtime_context_key(config: RaceConfig) -> str:
     """Bucket races into the smallest context split that the data supports.
 
-    The strongest residual signals after the nonlinear wear upgrade are that
-    medium-length cool races split again by track-speed proxy, hot medium
-    races need their own high-pit and non-high-pit fits, and non-medium races
-    no longer collapse short and long regimes into one bucket.
+    The gate is intentionally hierarchical:
+    - first choose a broad parent regime
+    - then specialize only if the child split beat that parent on held-out data
+
+    That lets us keep pruning weak buckets without losing coverage, because
+    every specialized branch still has a valid parent fallback.
     """
 
-    if 37 <= config.total_laps <= 52:
-        pit_burden = config.pit_lane_time / config.base_lap_time
-        if config.track_temp <= 25:
-            if config.base_lap_time <= 90.0:
-                return "medium_cool_fast_mid"
-            return "medium_cool_slow"
-        if pit_burden > 0.255 and config.track_temp >= 37:
+    parent_key = runtime_parent_context_key(config)
+
+    if parent_key == "medium_cool":
+        if config.base_lap_time <= 90.0:
+            return "medium_cool_fast_mid"
+        return "medium_cool_slow"
+    if parent_key == "medium_high_pit":
+        if config.track_temp >= 37:
             return "medium_high_pit_hot"
-        if pit_burden > 0.255:
-            return "medium_high_pit"
+        return "medium_high_pit"
+    if parent_key == "medium_other":
         if config.track_temp >= 37:
             return "medium_other_hot"
         return "medium_other"
