@@ -30,9 +30,9 @@ from .scoring import predict_finishing_order
 
 PARAMETER_BOUNDS = {
     "pace_offset": {
-        "SOFT": (-1.5, 0.0),
-        "MEDIUM": (-0.75, 0.75),
-        "HARD": (0.0, 1.5),
+        "SOFT": (-3.0, 0.0),
+        "MEDIUM": (-1.5, 1.5),
+        "HARD": (0.0, 3.0),
     },
     "grace_laps": {
         "SOFT": (2, 10),

@@ -98,6 +98,9 @@ The solver is organized so each file answers one question:
    Each active runtime leaf now starts from its currently frozen leaf model
    instead of restarting from the global baseline, so fitting improves the live
    gate we actually ship rather than relearning those leaves from scratch.
+   The pace-offset search bounds are intentionally wider than the original
+   model's caps, because the tighter bounds were clipping a materially better
+   exact-order fit on held-out history.
    Pass `--context-split global` to compare against the single-model baseline,
    or `--context-split learned_tree` to search for a new compact routing tree
    over the current expert model catalog.
