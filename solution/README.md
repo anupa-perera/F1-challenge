@@ -55,7 +55,7 @@ The solver is organized so each file answers one question:
   restart stints can have a different early-lap pace shape than the opening
   stint, and the fitter learns one global scale for that effect per runtime
   bucket instead of hard-coding a new family of per-compound bonuses.
-- Runtime now uses a deterministic context gate:
+- Runtime now uses one explicit deterministic gate tree:
   medium-length cool fast/mid tracks use a dedicated parameter set,
   medium-length cool slow tracks with milder temperatures use their own fit,
   medium-length cool slow tracks use their own fit,
@@ -74,6 +74,7 @@ The solver is organized so each file answers one question:
   - parent fallbacks are `medium_cool`, `medium_high_pit`, `medium_other`, and `non_medium`
   - child buckets only stay in the runtime path if they beat their parent on held-out history
   - this lets us drop weak specializations later without changing the scorer
+  - the tree is now the single source of truth for runtime routing, bucket order, and local fallback models, instead of repeating the same logic across separate `if/else` blocks and maps
 
 ## Workflow
 

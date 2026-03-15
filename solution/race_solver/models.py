@@ -7,7 +7,7 @@ Keeping the core shapes in one place makes the rest of the code read more like
 """
 
 from dataclasses import dataclass
-from typing import Mapping
+from typing import Mapping, TypeAlias
 
 
 COMPOUND_ORDER = ("SOFT", "MEDIUM", "HARD")
@@ -60,6 +60,24 @@ class ModelParameters:
     compounds: Mapping[str, CompoundParameters]
     lap_progress_pace_scale: float
     post_stop_opening_bias_scale: float = 0.0
+
+
+@dataclass(frozen=True)
+class GateLeafNode:
+    context_key: str
+    model: ModelParameters
+    fallback_context_key: str | None = None
+
+
+@dataclass(frozen=True)
+class GateSplitNode:
+    feature_name: str
+    threshold: float
+    left: "GateNode"
+    right: "GateNode"
+
+
+GateNode: TypeAlias = GateLeafNode | GateSplitNode
 
 
 @dataclass(frozen=True)
