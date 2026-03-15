@@ -91,14 +91,20 @@ def run_self_checks() -> None:
     medium_race = RaceConfig("Medium", 45, 87.5, 21.0, 30)
     medium_cool_race = RaceConfig("MediumCool", 45, 87.5, 21.0, 24)
     medium_high_pit_race = RaceConfig("MediumHighPit", 45, 87.5, 22.5, 30)
+    medium_high_pit_hot_race = RaceConfig("MediumHighPitHot", 45, 87.5, 22.5, 38)
+    medium_other_hot_race = RaceConfig("MediumOtherHot", 45, 87.5, 21.0, 38)
     long_non_medium_race = RaceConfig("LongNonMedium", 60, 87.5, 21.0, 30)
     assert runtime_context_key(medium_cool_race) == "medium_cool"
+    assert runtime_context_key(medium_high_pit_hot_race) == "medium_high_pit_hot"
     assert runtime_context_key(medium_high_pit_race) == "medium_high_pit"
+    assert runtime_context_key(medium_other_hot_race) == "medium_other_hot"
     assert runtime_context_key(medium_race) == "medium_other"
     assert runtime_context_key(long_non_medium_race) == "long_non_medium"
     assert runtime_model_for_config(medium_race) != runtime_model_for_config(short_race)
     assert runtime_model_for_config(medium_cool_race) != runtime_model_for_config(medium_race)
     assert runtime_model_for_config(medium_high_pit_race) != runtime_model_for_config(medium_race)
+    assert runtime_model_for_config(medium_high_pit_hot_race) != runtime_model_for_config(medium_high_pit_race)
+    assert runtime_model_for_config(medium_other_hot_race) != runtime_model_for_config(medium_race)
     assert runtime_model_for_config(short_race) != runtime_model_for_config(long_non_medium_race)
 
     identical_plans = (

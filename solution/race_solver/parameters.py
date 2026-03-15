@@ -103,6 +103,37 @@ MEDIUM_HIGH_PIT_MODEL_PARAMETERS = ModelParameters(
 )
 
 
+MEDIUM_HIGH_PIT_HOT_MODEL_PARAMETERS = ModelParameters(
+    compounds={
+        "SOFT": CompoundParameters(
+            pace_offset=-1.0,
+            grace_laps=5,
+            deg_rate=0.12,
+            temp_pace_scale=0.1,
+            temp_deg_scale=0.05,
+            race_length_deg_scale=0.1,
+        ),
+        "MEDIUM": CompoundParameters(
+            pace_offset=0.75,
+            grace_laps=14,
+            deg_rate=0.05,
+            temp_pace_scale=-0.025,
+            temp_deg_scale=-0.05,
+            race_length_deg_scale=0.15,
+        ),
+        "HARD": CompoundParameters(
+            pace_offset=1.5,
+            grace_laps=21,
+            deg_rate=0.018,
+            temp_pace_scale=0.0,
+            temp_deg_scale=-0.1,
+            race_length_deg_scale=0.15,
+        ),
+    },
+    lap_progress_pace_scale=0.025,
+)
+
+
 MEDIUM_OTHER_MODEL_PARAMETERS = ModelParameters(
     compounds={
         "SOFT": CompoundParameters(
@@ -128,6 +159,37 @@ MEDIUM_OTHER_MODEL_PARAMETERS = ModelParameters(
             temp_pace_scale=0.025,
             temp_deg_scale=0.05,
             race_length_deg_scale=0.2,
+        ),
+    },
+    lap_progress_pace_scale=0.025,
+)
+
+
+MEDIUM_OTHER_HOT_MODEL_PARAMETERS = ModelParameters(
+    compounds={
+        "SOFT": CompoundParameters(
+            pace_offset=-0.9,
+            grace_laps=5,
+            deg_rate=0.115,
+            temp_pace_scale=0.05,
+            temp_deg_scale=0.05,
+            race_length_deg_scale=0.05,
+        ),
+        "MEDIUM": CompoundParameters(
+            pace_offset=0.65,
+            grace_laps=14,
+            deg_rate=0.045,
+            temp_pace_scale=-0.05,
+            temp_deg_scale=-0.0,
+            race_length_deg_scale=0.1,
+        ),
+        "HARD": CompoundParameters(
+            pace_offset=1.5,
+            grace_laps=23,
+            deg_rate=0.018,
+            temp_pace_scale=0.025,
+            temp_deg_scale=0.15,
+            race_length_deg_scale=0.15,
         ),
     },
     lap_progress_pace_scale=0.025,
@@ -170,7 +232,9 @@ LONG_NON_MEDIUM_MODEL_PARAMETERS = DEFAULT_MODEL_PARAMETERS
 
 RUNTIME_CONTEXT_ORDER = (
     "medium_cool",
+    "medium_high_pit_hot",
     "medium_high_pit",
+    "medium_other_hot",
     "medium_other",
     "short_non_medium",
     "long_non_medium",
@@ -182,15 +246,21 @@ def runtime_context_key(config: RaceConfig) -> str:
 
     The strongest residual signals after the nonlinear wear upgrade are that
     medium-length cool races behave differently from the rest of the medium
-    pack, high pit-burden medium races also benefit from their own fit, and
-    non-medium races no longer collapse short and long regimes into one bucket.
+    pack, hot medium races need their own high-pit and non-high-pit fits,
+    and non-medium races no longer collapse short and long regimes into one
+    bucket.
     """
 
-    if 37 <= config.total_laps <= 52 and config.track_temp <= 25:
-        return "medium_cool"
-    if 37 <= config.total_laps <= 52 and (config.pit_lane_time / config.base_lap_time) > 0.255:
-        return "medium_high_pit"
     if 37 <= config.total_laps <= 52:
+        pit_burden = config.pit_lane_time / config.base_lap_time
+        if config.track_temp <= 25:
+            return "medium_cool"
+        if pit_burden > 0.255 and config.track_temp >= 37:
+            return "medium_high_pit_hot"
+        if pit_burden > 0.255:
+            return "medium_high_pit"
+        if config.track_temp >= 37:
+            return "medium_other_hot"
         return "medium_other"
     if config.total_laps < 37:
         return "short_non_medium"
@@ -199,7 +269,9 @@ def runtime_context_key(config: RaceConfig) -> str:
 
 RUNTIME_MODEL_PARAMETERS = {
     "medium_cool": MEDIUM_COOL_MODEL_PARAMETERS,
+    "medium_high_pit_hot": MEDIUM_HIGH_PIT_HOT_MODEL_PARAMETERS,
     "medium_high_pit": MEDIUM_HIGH_PIT_MODEL_PARAMETERS,
+    "medium_other_hot": MEDIUM_OTHER_HOT_MODEL_PARAMETERS,
     "medium_other": MEDIUM_OTHER_MODEL_PARAMETERS,
     "short_non_medium": SHORT_NON_MEDIUM_MODEL_PARAMETERS,
     "long_non_medium": LONG_NON_MEDIUM_MODEL_PARAMETERS,
