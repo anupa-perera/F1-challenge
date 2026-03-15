@@ -320,6 +320,68 @@ SHORT_NON_MEDIUM_MODEL_PARAMETERS = ModelParameters(
 )
 
 
+SHORT_COOL_MILD_MODEL_PARAMETERS = ModelParameters(
+    compounds={
+        "SOFT": CompoundParameters(
+            pace_offset=-1.4,
+            grace_laps=4,
+            deg_rate=0.1,
+            temp_pace_scale=-0.025,
+            temp_deg_scale=-0.0,
+            race_length_deg_scale=0.2,
+        ),
+        "MEDIUM": CompoundParameters(
+            pace_offset=0.25,
+            grace_laps=13,
+            deg_rate=0.04,
+            temp_pace_scale=0.05,
+            temp_deg_scale=0.125,
+            race_length_deg_scale=0.025,
+        ),
+        "HARD": CompoundParameters(
+            pace_offset=1.5,
+            grace_laps=25,
+            deg_rate=0.015,
+            temp_pace_scale=0.0,
+            temp_deg_scale=-0.025,
+            race_length_deg_scale=0.125,
+        ),
+    },
+    lap_progress_pace_scale=0.0,
+)
+
+
+SHORT_WARM_MODEL_PARAMETERS = ModelParameters(
+    compounds={
+        "SOFT": CompoundParameters(
+            pace_offset=-1.4,
+            grace_laps=4,
+            deg_rate=0.1,
+            temp_pace_scale=0.075,
+            temp_deg_scale=-0.1,
+            race_length_deg_scale=0.2,
+        ),
+        "MEDIUM": CompoundParameters(
+            pace_offset=0.25,
+            grace_laps=13,
+            deg_rate=0.04,
+            temp_pace_scale=-0.2,
+            temp_deg_scale=-0.0,
+            race_length_deg_scale=0.025,
+        ),
+        "HARD": CompoundParameters(
+            pace_offset=1.5,
+            grace_laps=26,
+            deg_rate=0.025,
+            temp_pace_scale=0.0,
+            temp_deg_scale=-0.175,
+            race_length_deg_scale=0.2,
+        ),
+    },
+    lap_progress_pace_scale=0.0,
+)
+
+
 LONG_NON_MEDIUM_MODEL_PARAMETERS = DEFAULT_MODEL_PARAMETERS
 
 
@@ -340,7 +402,8 @@ RUNTIME_CONTEXT_ORDER = (
     "medium_other_hot_fast_mid",
     "medium_other_hot",
     "medium_other",
-    "short_non_medium",
+    "short_cool_mild",
+    "short_warm",
     "long_non_medium",
 )
 
@@ -356,7 +419,7 @@ RUNTIME_CHILDREN_BY_PARENT = {
         "medium_other_hot",
         "medium_other",
     ),
-    "non_medium": ("short_non_medium", "long_non_medium"),
+    "non_medium": ("short_cool_mild", "short_warm", "long_non_medium"),
 }
 
 RUNTIME_PARENT_BY_CHILD = {
@@ -382,7 +445,8 @@ RUNTIME_FALLBACK_CONTEXT_BY_CHILD = {
     "medium_other": "medium_other",
     # Short non-medium races are the earned child; the long/global fit remains
     # the fallback that used to cover the entire non-medium parent.
-    "short_non_medium": "long_non_medium",
+    "short_cool_mild": "short_non_medium",
+    "short_warm": "short_non_medium",
     "long_non_medium": "long_non_medium",
 }
 
@@ -447,7 +511,9 @@ def runtime_context_key(config: RaceConfig) -> str:
             return "medium_other_hot"
         return "medium_other"
     if config.total_laps < 37:
-        return "short_non_medium"
+        if config.track_temp <= 28:
+            return "short_cool_mild"
+        return "short_warm"
     return "long_non_medium"
 
 
@@ -460,7 +526,11 @@ RUNTIME_MODEL_PARAMETERS = {
     "medium_other_hot_fast_mid": MEDIUM_OTHER_HOT_FAST_MID_MODEL_PARAMETERS,
     "medium_other_hot": MEDIUM_OTHER_HOT_MODEL_PARAMETERS,
     "medium_other": MEDIUM_OTHER_MODEL_PARAMETERS,
+    # `short_non_medium` remains here as the local fallback for the two active
+    # short-race children. Runtime leaf selection comes from `RUNTIME_CONTEXT_ORDER`.
     "short_non_medium": SHORT_NON_MEDIUM_MODEL_PARAMETERS,
+    "short_cool_mild": SHORT_COOL_MILD_MODEL_PARAMETERS,
+    "short_warm": SHORT_WARM_MODEL_PARAMETERS,
     "long_non_medium": LONG_NON_MEDIUM_MODEL_PARAMETERS,
 }
 

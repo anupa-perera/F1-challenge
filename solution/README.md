@@ -60,7 +60,8 @@ The solver is organized so each file answers one question:
   hot medium-length non-high-pit fast/mid tracks use their own fit,
   hot medium-length non-high-pit races use their own fit,
   other medium-length races use their own fit,
-  short non-medium races use their own fit,
+  short cool/mild non-medium races use their own fit,
+  short warm/hot non-medium races use their own fit,
   and long non-medium races keep their own fit.
 - The gate is hierarchical, not flat:
   - parent fallbacks are `medium_cool`, `medium_high_pit`, `medium_other`, and `non_medium`
@@ -76,13 +77,13 @@ The solver is organized so each file answers one question:
    `--profile fast` for trying ideas cheaply,
    `--profile medium` before spending a full run,
    and `--profile full` as the only commit-worthy gate.
-   By default calibration now fits the runtime ten-way split
+   By default calibration now fits the runtime eleven-way split
    (`medium_cool_fast_mid`, `medium_cool_slow`,
    `medium_high_pit_hot_fast_slow`, `medium_high_pit_hot`,
    `medium_high_pit`,
    `medium_other_hot_fast_mid`, `medium_other_hot`,
    `medium_other`,
-   `short_non_medium`, `long_non_medium`);
+   `short_cool_mild`, `short_warm`, `long_non_medium`);
    pass `--context-split global` to compare against the
    single-model baseline.
 3. Freeze the best parameters back into `race_solver/parameters.py`.
