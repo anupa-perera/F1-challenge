@@ -158,11 +158,17 @@ def run_self_checks() -> None:
         hard_non_loop_plan,
         model=hard_loop_model,
     ).hard_loop_penalty_time == 0.0
-    hard_flip_model = replace_parameter(
+    hard_to_soft_arc_model = replace_parameter(
         DEFAULT_MODEL_PARAMETERS,
         None,
-        "hard_to_softer_one_stop_penalty",
+        "one_stop_arc_hard_to_soft",
         0.035,
+    )
+    hard_to_medium_arc_model = replace_parameter(
+        DEFAULT_MODEL_PARAMETERS,
+        None,
+        "one_stop_arc_hard_to_medium",
+        0.02,
     )
     medium_race = RaceConfig(
         track="Medium",
@@ -179,36 +185,29 @@ def run_self_checks() -> None:
             "pit_stops": [{"lap": 28, "from_tire": "HARD", "to_tire": "SOFT"}],
         },
     )
-    hard_to_soft_cool_short_plan = build_driver_plan(
-        total_laps=36,
+    hard_one_stop_plan = build_driver_plan(
+        total_laps=45,
         strategy={
-            "driver_id": "D017",
+            "driver_id": "D013",
             "starting_tire": "HARD",
-            "pit_stops": [{"lap": 26, "from_tire": "HARD", "to_tire": "SOFT"}],
+            "pit_stops": [{"lap": 25, "from_tire": "HARD", "to_tire": "MEDIUM"}],
         },
     )
     assert driver_score_breakdown(
         medium_race,
         hard_to_soft_hot_plan,
-        model=hard_flip_model,
-    ).hard_to_softer_one_stop_time == 0.035
-    cool_short_race = RaceConfig(
-        track="CoolShort",
-        total_laps=36,
-        base_lap_time=87.5,
-        pit_lane_time=21.0,
-        track_temp=22,
-    )
+        model=hard_to_soft_arc_model,
+    ).one_stop_arc_time == 0.035
     assert driver_score_breakdown(
-        cool_short_race,
-        hard_to_soft_cool_short_plan,
-        model=hard_flip_model,
-    ).hard_to_softer_one_stop_time == 0.0
-    medhard_bonus_model = replace_parameter(
+        medium_race,
+        hard_one_stop_plan,
+        model=hard_to_medium_arc_model,
+    ).one_stop_arc_time == 0.02
+    medhard_arc_model = replace_parameter(
         DEFAULT_MODEL_PARAMETERS,
         None,
-        "medium_to_hard_one_stop_bonus",
-        0.04,
+        "one_stop_arc_medium_to_hard",
+        -0.04,
     )
     medium_opening_model = replace_parameter(
         DEFAULT_MODEL_PARAMETERS,
@@ -239,14 +238,6 @@ def run_self_checks() -> None:
         pit_lane_time=21.0,
         track_temp=30,
     )
-    hard_one_stop_plan = build_driver_plan(
-        total_laps=45,
-        strategy={
-            "driver_id": "D013",
-            "starting_tire": "HARD",
-            "pit_stops": [{"lap": 25, "from_tire": "HARD", "to_tire": "MEDIUM"}],
-        },
-    )
     assert driver_score_breakdown(
         medium_race,
         medium_one_stop_plan,
@@ -255,13 +246,12 @@ def run_self_checks() -> None:
     assert driver_score_breakdown(
         medium_race,
         medium_one_stop_plan,
-        model=medhard_bonus_model,
-    ).medium_to_hard_one_stop_time == -0.04
+        model=medhard_arc_model,
+    ).one_stop_arc_time == -0.04
     assert driver_score_breakdown(
         short_medium_race,
         short_medium_to_hard_plan,
-        model=medhard_bonus_model,
-    ).medium_to_hard_one_stop_time == 0.0
+    ).one_stop_arc_time == 0.0
     assert driver_score_breakdown(
         medium_race,
         hard_one_stop_plan,
@@ -320,6 +310,14 @@ def run_self_checks() -> None:
     medium_high_pit_hot_race = RaceConfig("MediumHighPitHot", 45, 87.5, 22.5, 37)
     medium_cool_slow_cool_race = RaceConfig("MediumCoolSlowCool", 62, 91.0, 21.0, 24)
     long_non_medium_race = RaceConfig("LongNonMedium", 66, 87.5, 21.0, 30)
+    short_cool_arc_plan = build_driver_plan(
+        total_laps=36,
+        strategy={
+            "driver_id": "D019",
+            "starting_tire": "HARD",
+            "pit_stops": [{"lap": 26, "from_tire": "HARD", "to_tire": "SOFT"}],
+        },
+    )
     assert runtime_context_key(short_warm_race) == "short_warm"
     assert runtime_context_key(short_cool_mild_race) == "short_cool_mild"
     assert runtime_context_key(medium_high_pit_cool_race) == "medium_high_pit_cool"
@@ -342,6 +340,16 @@ def run_self_checks() -> None:
     assert runtime_model_for_config(medium_high_pit_race) != runtime_model_for_config(medium_high_pit_hot_race)
     assert runtime_model_for_config(medium_high_pit_race) != runtime_model_for_config(long_non_medium_race)
     assert runtime_model_for_config(medium_cool_slow_cool_race) != runtime_model_for_config(long_non_medium_race)
+    short_cool_arc_time = driver_score_breakdown(
+        short_cool_mild_race,
+        short_cool_arc_plan,
+    ).one_stop_arc_time
+    short_warm_arc_time = driver_score_breakdown(
+        short_warm_race,
+        short_cool_arc_plan,
+    ).one_stop_arc_time
+    assert short_cool_arc_time > 0.0
+    assert short_warm_arc_time > short_cool_arc_time
 
     identical_plans = (
         build_driver_plan(

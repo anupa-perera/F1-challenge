@@ -6,7 +6,7 @@ Keeping the core shapes in one place makes the rest of the code read more like
 "transform data" and less like "keep reconstructing JSON by hand".
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Mapping, TypeAlias
 
 
@@ -56,6 +56,16 @@ class CompoundParameters:
 
 
 @dataclass(frozen=True)
+class OneStopArcAdjustments:
+    soft_to_medium: float = 0.0
+    soft_to_hard: float = 0.0
+    medium_to_soft: float = 0.0
+    medium_to_hard: float = 0.0
+    hard_to_soft: float = 0.0
+    hard_to_medium: float = 0.0
+
+
+@dataclass(frozen=True)
 class ModelParameters:
     compounds: Mapping[str, CompoundParameters]
     lap_progress_pace_scale: float
@@ -63,8 +73,9 @@ class ModelParameters:
     additional_stop_penalty: float = 1.8
     medium_one_stop_opening_bias_scale: float = 0.15
     hard_loop_extreme_temp_penalty: float = 1.15
-    hard_to_softer_one_stop_penalty: float = 0.035
-    medium_to_hard_one_stop_bonus: float = 0.04
+    one_stop_arcs: OneStopArcAdjustments = field(
+        default_factory=OneStopArcAdjustments
+    )
 
 
 @dataclass(frozen=True)
@@ -106,8 +117,7 @@ class DriverScoreBreakdown:
     pit_stop_time: float
     additional_stop_time: float
     hard_loop_penalty_time: float
-    hard_to_softer_one_stop_time: float
-    medium_to_hard_one_stop_time: float
+    one_stop_arc_time: float
     opening_commitment_time: float
     tire_penalty_time: float
     total_time: float

@@ -16,13 +16,6 @@ from .models import (
 from .runtime_gate import runtime_model_for_config
 
 
-COMPOUND_RANK = {
-    "SOFT": 0,
-    "MEDIUM": 1,
-    "HARD": 2,
-}
-
-
 @dataclass(frozen=True)
 class _StintPenaltyComponents:
     base_pace_total: float
@@ -161,33 +154,40 @@ def is_hard_loop_two_stop_plan(driver_plan: DriverPlan) -> bool:
     )
 
 
-def is_short_cool_race(config: RaceConfig) -> bool:
-    """Return whether the race sits in the one strong hard-first exception."""
+def one_stop_arc_key(driver_plan: DriverPlan) -> str | None:
+    """Return the transition arc for a one-stop plan, if present.
 
-    return config.total_laps <= 36 and config.track_temp <= 24
-
-
-def is_hard_to_softer_one_stop_plan(driver_plan: DriverPlan) -> bool:
-    """Return whether a one-stop plan starts on HARD and closes on a softer tire."""
+    The remaining one-stop misses are really about the quality of the compound
+    transition itself. Making that arc explicit gives the scorer one clean seam
+    instead of separate narrow helpers for specific mirrored families.
+    """
 
     if driver_plan.stop_count != 1 or len(driver_plan.stints) != 2:
-        return False
+        return None
     first_compound = driver_plan.stints[0].compound
     second_compound = driver_plan.stints[1].compound
-    if first_compound != "HARD":
-        return False
-    return COMPOUND_RANK[second_compound] < COMPOUND_RANK[first_compound]
+    return f"{first_compound}->{second_compound}"
 
 
-def is_medium_to_hard_one_stop_plan(driver_plan: DriverPlan) -> bool:
-    """Return whether a one-stop plan uses the historically strong MEDIUM->HARD arc."""
+def one_stop_arc_adjustment_time(
+    driver_plan: DriverPlan,
+    model: ModelParameters,
+) -> float:
+    """Return the explicit transition adjustment for one-stop compound arcs."""
 
-    return (
-        driver_plan.stop_count == 1
-        and len(driver_plan.stints) == 2
-        and driver_plan.stints[0].compound == "MEDIUM"
-        and driver_plan.stints[1].compound == "HARD"
-    )
+    arc_key = one_stop_arc_key(driver_plan)
+    if arc_key is None:
+        return 0.0
+
+    arc_value_by_key = {
+        "SOFT->MEDIUM": model.one_stop_arcs.soft_to_medium,
+        "SOFT->HARD": model.one_stop_arcs.soft_to_hard,
+        "MEDIUM->SOFT": model.one_stop_arcs.medium_to_soft,
+        "MEDIUM->HARD": model.one_stop_arcs.medium_to_hard,
+        "HARD->SOFT": model.one_stop_arcs.hard_to_soft,
+        "HARD->MEDIUM": model.one_stop_arcs.hard_to_medium,
+    }
+    return arc_value_by_key.get(arc_key, 0.0)
 
 
 def restart_opening_profile(compound: str) -> tuple[float, ...]:
@@ -381,16 +381,7 @@ def driver_score_breakdown(
         driver_plan,
         resolved_model,
     )
-    hard_to_softer_one_stop_time = hard_to_softer_one_stop_time_penalty(
-        config,
-        driver_plan,
-        resolved_model,
-    )
-    medium_to_hard_one_stop_time = medium_to_hard_one_stop_bonus_time(
-        config,
-        driver_plan,
-        resolved_model,
-    )
+    one_stop_arc_time = one_stop_arc_adjustment_time(driver_plan, resolved_model)
     opening_commitment_time = medium_one_stop_opening_time(
         config,
         driver_plan,
@@ -408,8 +399,7 @@ def driver_score_breakdown(
         pit_stop_time=pit_stop_time,
         additional_stop_time=additional_stop_time,
         hard_loop_penalty_time=hard_loop_penalty_time,
-        hard_to_softer_one_stop_time=hard_to_softer_one_stop_time,
-        medium_to_hard_one_stop_time=medium_to_hard_one_stop_time,
+        one_stop_arc_time=one_stop_arc_time,
         opening_commitment_time=opening_commitment_time,
         tire_penalty_time=tire_penalty_time,
         total_time=(
@@ -417,8 +407,7 @@ def driver_score_breakdown(
             + pit_stop_time
             + additional_stop_time
             + hard_loop_penalty_time
-            + hard_to_softer_one_stop_time
-            + medium_to_hard_one_stop_time
+            + one_stop_arc_time
             + opening_commitment_time
             + tire_penalty_time
         ),
@@ -447,16 +436,7 @@ def driver_total_time(
         driver_plan,
         resolved_model,
     )
-    hard_to_softer_one_stop_time = hard_to_softer_one_stop_time_penalty(
-        config,
-        driver_plan,
-        resolved_model,
-    )
-    medium_to_hard_one_stop_time = medium_to_hard_one_stop_bonus_time(
-        config,
-        driver_plan,
-        resolved_model,
-    )
+    one_stop_arc_time = one_stop_arc_adjustment_time(driver_plan, resolved_model)
     opening_commitment_time = medium_one_stop_opening_time(
         config,
         driver_plan,
@@ -471,8 +451,7 @@ def driver_total_time(
         + pit_stop_time
         + additional_stop_time
         + hard_loop_penalty_time
-        + hard_to_softer_one_stop_time
-        + medium_to_hard_one_stop_time
+        + one_stop_arc_time
         + opening_commitment_time
         + tire_penalty_time
     )
@@ -511,45 +490,6 @@ def hard_loop_extreme_temp_time(
     if not is_hard_loop_two_stop_plan(driver_plan):
         return 0.0
     return model.hard_loop_extreme_temp_penalty
-
-
-def hard_to_softer_one_stop_time_penalty(
-    config: RaceConfig,
-    driver_plan: DriverPlan,
-    model: ModelParameters,
-) -> float:
-    """Return the extra cost for hard-first one-stop plans that close softer.
-
-    Outside short cool races, held-out data consistently prefers the mirrored
-    alternative over many `HARD->MEDIUM` and `HARD->SOFT` one-stop plans. This
-    keeps that correction narrow instead of pushing a larger generic order term
-    through every one-stop strategy.
-    """
-
-    if is_short_cool_race(config):
-        return 0.0
-    if not is_hard_to_softer_one_stop_plan(driver_plan):
-        return 0.0
-    return model.hard_to_softer_one_stop_penalty
-
-
-def medium_to_hard_one_stop_bonus_time(
-    config: RaceConfig,
-    driver_plan: DriverPlan,
-    model: ModelParameters,
-) -> float:
-    """Return a small bonus for the robust MEDIUM->HARD one-stop family.
-
-    After the hard-first penalties, the remaining one-stop miss is still that
-    `MEDIUM->HARD` lands slightly too low in non-short races. We price that
-    family directly instead of broadening the bonus to every medium-start plan.
-    """
-
-    if config.total_laps <= 36:
-        return 0.0
-    if not is_medium_to_hard_one_stop_plan(driver_plan):
-        return 0.0
-    return -model.medium_to_hard_one_stop_bonus
 
 
 def medium_one_stop_opening_time(

@@ -52,8 +52,12 @@ PARAMETER_BOUNDS = {
     "additional_stop_penalty": {None: (0.0, 4.0)},
     "medium_one_stop_opening_bias_scale": {None: (-0.5, 0.5)},
     "hard_loop_extreme_temp_penalty": {None: (0.0, 2.0)},
-    "hard_to_softer_one_stop_penalty": {None: (0.0, 0.2)},
-    "medium_to_hard_one_stop_bonus": {None: (0.0, 0.2)},
+    "one_stop_arc_soft_to_medium": {None: (-0.2, 0.2)},
+    "one_stop_arc_soft_to_hard": {None: (-0.2, 0.2)},
+    "one_stop_arc_medium_to_soft": {None: (-0.2, 0.2)},
+    "one_stop_arc_medium_to_hard": {None: (-0.2, 0.2)},
+    "one_stop_arc_hard_to_soft": {None: (-0.2, 0.2)},
+    "one_stop_arc_hard_to_medium": {None: (-0.2, 0.2)},
 }
 COARSE_STEPS = {
     "pace_offset": 0.1,
@@ -67,8 +71,12 @@ COARSE_STEPS = {
     "additional_stop_penalty": 0.1,
     "medium_one_stop_opening_bias_scale": 0.05,
     "hard_loop_extreme_temp_penalty": 0.1,
-    "hard_to_softer_one_stop_penalty": 0.01,
-    "medium_to_hard_one_stop_bonus": 0.01,
+    "one_stop_arc_soft_to_medium": 0.02,
+    "one_stop_arc_soft_to_hard": 0.02,
+    "one_stop_arc_medium_to_soft": 0.02,
+    "one_stop_arc_medium_to_hard": 0.02,
+    "one_stop_arc_hard_to_soft": 0.02,
+    "one_stop_arc_hard_to_medium": 0.02,
 }
 REFINE_STEPS = {
     "pace_offset": 0.05,
@@ -82,8 +90,12 @@ REFINE_STEPS = {
     "additional_stop_penalty": 0.05,
     "medium_one_stop_opening_bias_scale": 0.025,
     "hard_loop_extreme_temp_penalty": 0.05,
-    "hard_to_softer_one_stop_penalty": 0.005,
-    "medium_to_hard_one_stop_bonus": 0.005,
+    "one_stop_arc_soft_to_medium": 0.01,
+    "one_stop_arc_soft_to_hard": 0.01,
+    "one_stop_arc_medium_to_soft": 0.01,
+    "one_stop_arc_medium_to_hard": 0.01,
+    "one_stop_arc_hard_to_soft": 0.01,
+    "one_stop_arc_hard_to_medium": 0.01,
 }
 @dataclass(frozen=True)
 class SearchResult:
@@ -183,8 +195,12 @@ def model_signature(model: ModelParameters) -> tuple[float | int, ...]:
         round(model.additional_stop_penalty, 6),
         round(model.medium_one_stop_opening_bias_scale, 6),
         round(model.hard_loop_extreme_temp_penalty, 6),
-        round(model.hard_to_softer_one_stop_penalty, 6),
-        round(model.medium_to_hard_one_stop_bonus, 6),
+        round(model.one_stop_arcs.soft_to_medium, 6),
+        round(model.one_stop_arcs.soft_to_hard, 6),
+        round(model.one_stop_arcs.medium_to_soft, 6),
+        round(model.one_stop_arcs.medium_to_hard, 6),
+        round(model.one_stop_arcs.hard_to_soft, 6),
+        round(model.one_stop_arcs.hard_to_medium, 6),
     ]
     for compound in COMPOUND_ORDER:
         params = model.compounds[compound]
@@ -328,8 +344,12 @@ def search_sequence() -> list[tuple[str | None, str]]:
         "additional_stop_penalty",
         "medium_one_stop_opening_bias_scale",
         "hard_loop_extreme_temp_penalty",
-        "hard_to_softer_one_stop_penalty",
-        "medium_to_hard_one_stop_bonus",
+        "one_stop_arc_soft_to_medium",
+        "one_stop_arc_soft_to_hard",
+        "one_stop_arc_medium_to_soft",
+        "one_stop_arc_medium_to_hard",
+        "one_stop_arc_hard_to_soft",
+        "one_stop_arc_hard_to_medium",
         "pace_offset",
         "grace_laps",
         "deg_rate",
@@ -345,8 +365,12 @@ def search_sequence() -> list[tuple[str | None, str]]:
             "additional_stop_penalty",
             "medium_one_stop_opening_bias_scale",
             "hard_loop_extreme_temp_penalty",
-            "hard_to_softer_one_stop_penalty",
-            "medium_to_hard_one_stop_bonus",
+            "one_stop_arc_soft_to_medium",
+            "one_stop_arc_soft_to_hard",
+            "one_stop_arc_medium_to_soft",
+            "one_stop_arc_medium_to_hard",
+            "one_stop_arc_hard_to_soft",
+            "one_stop_arc_hard_to_medium",
         }:
             sequence.append((None, field_name))
             continue
@@ -413,7 +437,11 @@ def refine_search(
 
         for compound, field_name in search_sequence():
             if compound is None:
-                current_value = getattr(current_model, field_name)
+                if field_name.startswith("one_stop_arc_"):
+                    arc_field_name = field_name.removeprefix("one_stop_arc_")
+                    current_value = getattr(current_model.one_stop_arcs, arc_field_name)
+                else:
+                    current_value = getattr(current_model, field_name)
             else:
                 current_value = getattr(current_model.compounds[compound], field_name)
             best_model = current_model

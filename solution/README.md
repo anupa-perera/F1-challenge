@@ -98,15 +98,15 @@ The solver is organized so each file answers one question:
   Held-out residuals kept overrating `HARD->...->HARD` two-stop loops in cool
   and hot races, so the live model prices that specific family explicitly
   instead of inflating the generic stop penalty for every two-stop plan.
-- The scorer also applies a tiny penalty to one-stop plans that start on
-  `HARD` and switch to a softer tire later, except in short cool races where
-  the history genuinely favors `HARD->SOFT`. That keeps the correction tied to
-  the mirrored one-stop family the data still flags instead of broadening it
-  into a global sequence hack.
-- The scorer also gives a tiny bonus to `MEDIUM->HARD` one-stop plans outside
-  short races. After the hard-first correction, held-out data still showed
-  that family landing a little too low, so the live model prices that exact
-  arc directly instead of boosting every medium-start strategy.
+- The scorer now treats one-stop compound transitions as an explicit arc term
+  rather than separate hard-first and medium-to-hard patches. That keeps the
+  remaining mirrored one-stop corrections in one place:
+  - each one-stop arc (`SOFT->MEDIUM`, `SOFT->HARD`, `MEDIUM->SOFT`,
+    `MEDIUM->HARD`, `HARD->SOFT`, `HARD->MEDIUM`) can carry a small fitted
+    adjustment
+  - most runtime leaves still use the old neutral/default arc shape
+  - the current `short_cool_mild` leaf is the one that earned a materially
+    different arc profile on held-out history
 - The scorer also adds a small opening commitment cost for one-stop MEDIUM
   starters in medium-length races. Held-out crossover errors showed those
   plans were still a bit too optimistic against mirrored alternatives, so the
