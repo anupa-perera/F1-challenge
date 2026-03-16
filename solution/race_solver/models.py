@@ -64,6 +64,7 @@ class ModelParameters:
     medium_one_stop_opening_bias_scale: float = 0.15
     hard_loop_extreme_temp_penalty: float = 1.15
     hard_to_softer_one_stop_penalty: float = 0.035
+    medium_to_hard_one_stop_bonus: float = 0.04
 
 
 @dataclass(frozen=True)
@@ -106,6 +107,7 @@ class DriverScoreBreakdown:
     additional_stop_time: float
     hard_loop_penalty_time: float
     hard_to_softer_one_stop_time: float
+    medium_to_hard_one_stop_time: float
     opening_commitment_time: float
     tire_penalty_time: float
     total_time: float

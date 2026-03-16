@@ -204,6 +204,12 @@ def run_self_checks() -> None:
         hard_to_soft_cool_short_plan,
         model=hard_flip_model,
     ).hard_to_softer_one_stop_time == 0.0
+    medhard_bonus_model = replace_parameter(
+        DEFAULT_MODEL_PARAMETERS,
+        None,
+        "medium_to_hard_one_stop_bonus",
+        0.04,
+    )
     medium_opening_model = replace_parameter(
         DEFAULT_MODEL_PARAMETERS,
         None,
@@ -218,6 +224,21 @@ def run_self_checks() -> None:
             "pit_stops": [{"lap": 20, "from_tire": "MEDIUM", "to_tire": "HARD"}],
         },
     )
+    short_medium_to_hard_plan = build_driver_plan(
+        total_laps=32,
+        strategy={
+            "driver_id": "D018",
+            "starting_tire": "MEDIUM",
+            "pit_stops": [{"lap": 14, "from_tire": "MEDIUM", "to_tire": "HARD"}],
+        },
+    )
+    short_medium_race = RaceConfig(
+        track="ShortMedium",
+        total_laps=32,
+        base_lap_time=87.5,
+        pit_lane_time=21.0,
+        track_temp=30,
+    )
     hard_one_stop_plan = build_driver_plan(
         total_laps=45,
         strategy={
@@ -231,6 +252,16 @@ def run_self_checks() -> None:
         medium_one_stop_plan,
         model=medium_opening_model,
     ).opening_commitment_time > 0.0
+    assert driver_score_breakdown(
+        medium_race,
+        medium_one_stop_plan,
+        model=medhard_bonus_model,
+    ).medium_to_hard_one_stop_time == -0.04
+    assert driver_score_breakdown(
+        short_medium_race,
+        short_medium_to_hard_plan,
+        model=medhard_bonus_model,
+    ).medium_to_hard_one_stop_time == 0.0
     assert driver_score_breakdown(
         medium_race,
         hard_one_stop_plan,

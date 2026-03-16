@@ -91,6 +91,10 @@ The solver is organized so each file answers one question:
   the history genuinely favors `HARD->SOFT`. That keeps the correction tied to
   the mirrored one-stop family the data still flags instead of broadening it
   into a global sequence hack.
+- The scorer also gives a tiny bonus to `MEDIUM->HARD` one-stop plans outside
+  short races. After the hard-first correction, held-out data still showed
+  that family landing a little too low, so the live model prices that exact
+  arc directly instead of boosting every medium-start strategy.
 - The scorer also adds a small opening commitment cost for one-stop MEDIUM
   starters in medium-length races. Held-out crossover errors showed those
   plans were still a bit too optimistic against mirrored alternatives, so the

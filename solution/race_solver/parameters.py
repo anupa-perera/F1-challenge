@@ -599,6 +599,7 @@ def replace_parameter(
         medium_one_stop_opening_bias_scale=model.medium_one_stop_opening_bias_scale,
         hard_loop_extreme_temp_penalty=model.hard_loop_extreme_temp_penalty,
         hard_to_softer_one_stop_penalty=model.hard_to_softer_one_stop_penalty,
+        medium_to_hard_one_stop_bonus=model.medium_to_hard_one_stop_bonus,
     )
 
 
@@ -640,6 +641,7 @@ def model_to_dict(model: ModelParameters) -> dict[str, dict[str, float | int]]:
             "medium_one_stop_opening_bias_scale": model.medium_one_stop_opening_bias_scale,
             "hard_loop_extreme_temp_penalty": model.hard_loop_extreme_temp_penalty,
             "hard_to_softer_one_stop_penalty": model.hard_to_softer_one_stop_penalty,
+            "medium_to_hard_one_stop_bonus": model.medium_to_hard_one_stop_bonus,
         },
         "compounds": {
             compound: {

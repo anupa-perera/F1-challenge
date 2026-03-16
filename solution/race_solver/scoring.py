@@ -179,6 +179,17 @@ def is_hard_to_softer_one_stop_plan(driver_plan: DriverPlan) -> bool:
     return COMPOUND_RANK[second_compound] < COMPOUND_RANK[first_compound]
 
 
+def is_medium_to_hard_one_stop_plan(driver_plan: DriverPlan) -> bool:
+    """Return whether a one-stop plan uses the historically strong MEDIUM->HARD arc."""
+
+    return (
+        driver_plan.stop_count == 1
+        and len(driver_plan.stints) == 2
+        and driver_plan.stints[0].compound == "MEDIUM"
+        and driver_plan.stints[1].compound == "HARD"
+    )
+
+
 def restart_opening_profile(compound: str) -> tuple[float, ...]:
     """Return the fixed restart opening shape for each compound.
 
@@ -375,6 +386,11 @@ def driver_score_breakdown(
         driver_plan,
         resolved_model,
     )
+    medium_to_hard_one_stop_time = medium_to_hard_one_stop_bonus_time(
+        config,
+        driver_plan,
+        resolved_model,
+    )
     opening_commitment_time = medium_one_stop_opening_time(
         config,
         driver_plan,
@@ -393,6 +409,7 @@ def driver_score_breakdown(
         additional_stop_time=additional_stop_time,
         hard_loop_penalty_time=hard_loop_penalty_time,
         hard_to_softer_one_stop_time=hard_to_softer_one_stop_time,
+        medium_to_hard_one_stop_time=medium_to_hard_one_stop_time,
         opening_commitment_time=opening_commitment_time,
         tire_penalty_time=tire_penalty_time,
         total_time=(
@@ -401,6 +418,7 @@ def driver_score_breakdown(
             + additional_stop_time
             + hard_loop_penalty_time
             + hard_to_softer_one_stop_time
+            + medium_to_hard_one_stop_time
             + opening_commitment_time
             + tire_penalty_time
         ),
@@ -434,6 +452,11 @@ def driver_total_time(
         driver_plan,
         resolved_model,
     )
+    medium_to_hard_one_stop_time = medium_to_hard_one_stop_bonus_time(
+        config,
+        driver_plan,
+        resolved_model,
+    )
     opening_commitment_time = medium_one_stop_opening_time(
         config,
         driver_plan,
@@ -449,6 +472,7 @@ def driver_total_time(
         + additional_stop_time
         + hard_loop_penalty_time
         + hard_to_softer_one_stop_time
+        + medium_to_hard_one_stop_time
         + opening_commitment_time
         + tire_penalty_time
     )
@@ -507,6 +531,25 @@ def hard_to_softer_one_stop_time_penalty(
     if not is_hard_to_softer_one_stop_plan(driver_plan):
         return 0.0
     return model.hard_to_softer_one_stop_penalty
+
+
+def medium_to_hard_one_stop_bonus_time(
+    config: RaceConfig,
+    driver_plan: DriverPlan,
+    model: ModelParameters,
+) -> float:
+    """Return a small bonus for the robust MEDIUM->HARD one-stop family.
+
+    After the hard-first penalties, the remaining one-stop miss is still that
+    `MEDIUM->HARD` lands slightly too low in non-short races. We price that
+    family directly instead of broadening the bonus to every medium-start plan.
+    """
+
+    if config.total_laps <= 36:
+        return 0.0
+    if not is_medium_to_hard_one_stop_plan(driver_plan):
+        return 0.0
+    return -model.medium_to_hard_one_stop_bonus
 
 
 def medium_one_stop_opening_time(

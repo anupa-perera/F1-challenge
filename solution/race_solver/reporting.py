@@ -22,6 +22,7 @@ def format_driver_breakdown(
             f"extra={breakdown.additional_stop_time:.3f}  "
             f"loop={breakdown.hard_loop_penalty_time:.3f}  "
             f"hardflip={breakdown.hard_to_softer_one_stop_time:.3f}  "
+            f"medhard={breakdown.medium_to_hard_one_stop_time:.3f}  "
             f"commit={breakdown.opening_commitment_time:.3f}  "
             f"tire={breakdown.tire_penalty_time:.3f}"
         )
