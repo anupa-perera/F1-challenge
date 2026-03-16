@@ -121,6 +121,10 @@ The solver is organized so each file answers one question:
 7. Analyze a whole suite with `python solution/analyze_suite.py`.
 8. Mine historical strategy patterns with `python solution/analyze_historical_patterns.py`.
    Use `--split validation` to inspect held-out residuals before changing the model.
+9. Guard high-support historical truths with
+   `python solution/check_historical_regressions.py`.
+   This keeps mirrored-family winner direction, major residual-bias signs, and
+   runtime bucket value gains from regressing while iterating on the model.
 
 ## Backlog
 
