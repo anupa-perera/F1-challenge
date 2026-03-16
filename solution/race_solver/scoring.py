@@ -16,6 +16,13 @@ from .models import (
 from .runtime_gate import runtime_model_for_config
 
 
+COMPOUND_RANK = {
+    "SOFT": 0,
+    "MEDIUM": 1,
+    "HARD": 2,
+}
+
+
 @dataclass(frozen=True)
 class _StintPenaltyComponents:
     base_pace_total: float
@@ -152,6 +159,24 @@ def is_hard_loop_two_stop_plan(driver_plan: DriverPlan) -> bool:
         and driver_plan.stints[0].compound == "HARD"
         and driver_plan.stints[-1].compound == "HARD"
     )
+
+
+def is_short_cool_race(config: RaceConfig) -> bool:
+    """Return whether the race sits in the one strong hard-first exception."""
+
+    return config.total_laps <= 36 and config.track_temp <= 24
+
+
+def is_hard_to_softer_one_stop_plan(driver_plan: DriverPlan) -> bool:
+    """Return whether a one-stop plan starts on HARD and closes on a softer tire."""
+
+    if driver_plan.stop_count != 1 or len(driver_plan.stints) != 2:
+        return False
+    first_compound = driver_plan.stints[0].compound
+    second_compound = driver_plan.stints[1].compound
+    if first_compound != "HARD":
+        return False
+    return COMPOUND_RANK[second_compound] < COMPOUND_RANK[first_compound]
 
 
 def restart_opening_profile(compound: str) -> tuple[float, ...]:
@@ -345,6 +370,11 @@ def driver_score_breakdown(
         driver_plan,
         resolved_model,
     )
+    hard_to_softer_one_stop_time = hard_to_softer_one_stop_time_penalty(
+        config,
+        driver_plan,
+        resolved_model,
+    )
     opening_commitment_time = medium_one_stop_opening_time(
         config,
         driver_plan,
@@ -362,6 +392,7 @@ def driver_score_breakdown(
         pit_stop_time=pit_stop_time,
         additional_stop_time=additional_stop_time,
         hard_loop_penalty_time=hard_loop_penalty_time,
+        hard_to_softer_one_stop_time=hard_to_softer_one_stop_time,
         opening_commitment_time=opening_commitment_time,
         tire_penalty_time=tire_penalty_time,
         total_time=(
@@ -369,6 +400,7 @@ def driver_score_breakdown(
             + pit_stop_time
             + additional_stop_time
             + hard_loop_penalty_time
+            + hard_to_softer_one_stop_time
             + opening_commitment_time
             + tire_penalty_time
         ),
@@ -397,6 +429,11 @@ def driver_total_time(
         driver_plan,
         resolved_model,
     )
+    hard_to_softer_one_stop_time = hard_to_softer_one_stop_time_penalty(
+        config,
+        driver_plan,
+        resolved_model,
+    )
     opening_commitment_time = medium_one_stop_opening_time(
         config,
         driver_plan,
@@ -411,6 +448,7 @@ def driver_total_time(
         + pit_stop_time
         + additional_stop_time
         + hard_loop_penalty_time
+        + hard_to_softer_one_stop_time
         + opening_commitment_time
         + tire_penalty_time
     )
@@ -449,6 +487,26 @@ def hard_loop_extreme_temp_time(
     if not is_hard_loop_two_stop_plan(driver_plan):
         return 0.0
     return model.hard_loop_extreme_temp_penalty
+
+
+def hard_to_softer_one_stop_time_penalty(
+    config: RaceConfig,
+    driver_plan: DriverPlan,
+    model: ModelParameters,
+) -> float:
+    """Return the extra cost for hard-first one-stop plans that close softer.
+
+    Outside short cool races, held-out data consistently prefers the mirrored
+    alternative over many `HARD->MEDIUM` and `HARD->SOFT` one-stop plans. This
+    keeps that correction narrow instead of pushing a larger generic order term
+    through every one-stop strategy.
+    """
+
+    if is_short_cool_race(config):
+        return 0.0
+    if not is_hard_to_softer_one_stop_plan(driver_plan):
+        return 0.0
+    return model.hard_to_softer_one_stop_penalty
 
 
 def medium_one_stop_opening_time(

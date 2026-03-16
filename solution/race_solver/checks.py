@@ -158,11 +158,11 @@ def run_self_checks() -> None:
         hard_non_loop_plan,
         model=hard_loop_model,
     ).hard_loop_penalty_time == 0.0
-    medium_opening_model = replace_parameter(
+    hard_flip_model = replace_parameter(
         DEFAULT_MODEL_PARAMETERS,
         None,
-        "medium_one_stop_opening_bias_scale",
-        0.15,
+        "hard_to_softer_one_stop_penalty",
+        0.035,
     )
     medium_race = RaceConfig(
         track="Medium",
@@ -170,6 +170,45 @@ def run_self_checks() -> None:
         base_lap_time=87.5,
         pit_lane_time=21.0,
         track_temp=30,
+    )
+    hard_to_soft_hot_plan = build_driver_plan(
+        total_laps=45,
+        strategy={
+            "driver_id": "D016",
+            "starting_tire": "HARD",
+            "pit_stops": [{"lap": 28, "from_tire": "HARD", "to_tire": "SOFT"}],
+        },
+    )
+    hard_to_soft_cool_short_plan = build_driver_plan(
+        total_laps=36,
+        strategy={
+            "driver_id": "D017",
+            "starting_tire": "HARD",
+            "pit_stops": [{"lap": 26, "from_tire": "HARD", "to_tire": "SOFT"}],
+        },
+    )
+    assert driver_score_breakdown(
+        medium_race,
+        hard_to_soft_hot_plan,
+        model=hard_flip_model,
+    ).hard_to_softer_one_stop_time == 0.035
+    cool_short_race = RaceConfig(
+        track="CoolShort",
+        total_laps=36,
+        base_lap_time=87.5,
+        pit_lane_time=21.0,
+        track_temp=22,
+    )
+    assert driver_score_breakdown(
+        cool_short_race,
+        hard_to_soft_cool_short_plan,
+        model=hard_flip_model,
+    ).hard_to_softer_one_stop_time == 0.0
+    medium_opening_model = replace_parameter(
+        DEFAULT_MODEL_PARAMETERS,
+        None,
+        "medium_one_stop_opening_bias_scale",
+        0.15,
     )
     medium_one_stop_plan = build_driver_plan(
         total_laps=45,
