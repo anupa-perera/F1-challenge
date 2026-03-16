@@ -52,7 +52,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--max-passes-grid",
-        default="1",
+        default="1,2,3",
         help="comma-separated max-pass values to search",
     )
     parser.add_argument("--max-rank-gap", type=int, default=2)
