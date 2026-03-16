@@ -228,7 +228,11 @@ MEDIUM_HIGH_PIT_COOL_MODEL_PARAMETERS = ModelParameters(
     },
     lap_progress_pace_scale=0.0,
     post_stop_opening_bias_scale=-0.025,
-    one_stop_arcs=DEFAULT_ONE_STOP_ARCS,
+    one_stop_arcs=OneStopArcAdjustments(
+        medium_to_hard=0.04,
+        hard_to_soft=0.04,
+        hard_to_medium=0.04,
+    ),
 )
 
 
@@ -261,7 +265,11 @@ MEDIUM_HIGH_PIT_HOT_MODEL_PARAMETERS = ModelParameters(
     },
     lap_progress_pace_scale=0.0,
     post_stop_opening_bias_scale=0.05,
-    one_stop_arcs=DEFAULT_ONE_STOP_ARCS,
+    one_stop_arcs=OneStopArcAdjustments(
+        hard_to_soft=0.12,
+        hard_to_medium=0.035,
+        medium_to_hard=-0.04,
+    ),
 )
 
 

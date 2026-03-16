@@ -105,7 +105,8 @@ The solver is organized so each file answers one question:
     `MEDIUM->HARD`, `HARD->SOFT`, `HARD->MEDIUM`) can carry a small fitted
     adjustment
   - most runtime leaves still use the old neutral/default arc shape
-  - the current `short_cool_mild` and `medium_high_pit` leaves are the ones
+  - the current `short_cool_mild`, `medium_high_pit`,
+    `medium_high_pit_hot`, and `medium_high_pit_cool` leaves are the ones
     that earned materially different arc profiles on held-out history
 - The scorer also adds a small opening commitment cost for one-stop MEDIUM
   starters in medium-length races. Held-out crossover errors showed those
