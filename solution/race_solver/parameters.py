@@ -191,7 +191,11 @@ MEDIUM_HIGH_PIT_MODEL_PARAMETERS = ModelParameters(
     lap_progress_pace_scale=0.0,
     post_stop_opening_bias_scale=0.025,
     additional_stop_penalty=4.0,
-    one_stop_arcs=DEFAULT_ONE_STOP_ARCS,
+    one_stop_arcs=OneStopArcAdjustments(
+        soft_to_hard=-0.04,
+        hard_to_soft=0.08,
+        hard_to_medium=0.08,
+    ),
 )
 
 
