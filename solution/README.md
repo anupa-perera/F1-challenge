@@ -96,6 +96,8 @@ The solver is organized so each file answers one question:
   - the exported reranker only inspects adjacent pairs with very small
     strategy-cost gaps
   - it swaps them only when the model is confident enough
+  - the current exported model is trained on both adjacent and second-neighbor
+    examples (`max_rank_gap=2`), but runtime still only performs adjacent swaps
   This keeps learning in the role of tie-breaker rather than replacing the
   whole strategy model.
 - Calibration and prediction use a direct total-time scorer, while explanation

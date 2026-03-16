@@ -55,7 +55,7 @@ def parse_args() -> argparse.Namespace:
         default="1",
         help="comma-separated max-pass values to search",
     )
-    parser.add_argument("--max-rank-gap", type=int, default=1)
+    parser.add_argument("--max-rank-gap", type=int, default=2)
     parser.add_argument("--max-iter", type=int, default=120)
     parser.add_argument("--max-leaf-nodes", type=int, default=15)
     parser.add_argument("--min-samples-leaf", type=int, default=60)
