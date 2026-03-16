@@ -102,7 +102,8 @@ MEDIUM_COOL_SLOW_COOL_MODEL_PARAMETERS = ModelParameters(
         ),
     },
     lap_progress_pace_scale=0.0,
-    post_stop_opening_bias_scale=0.5,
+    post_stop_opening_bias_scale=0.45,
+    additional_stop_penalty=3.8,
 )
 
 
@@ -167,6 +168,7 @@ MEDIUM_HIGH_PIT_MODEL_PARAMETERS = ModelParameters(
     },
     lap_progress_pace_scale=0.0,
     post_stop_opening_bias_scale=0.025,
+    additional_stop_penalty=4.0,
 )
 
 
@@ -482,7 +484,7 @@ SHORT_COOL_MILD_MODEL_PARAMETERS = ModelParameters(
             deg_rate=0.005,
             temp_pace_scale=0.05,
             temp_deg_scale=-0.2,
-            race_length_deg_scale=-0.15,
+            race_length_deg_scale=-0.2,
         ),
     },
     lap_progress_pace_scale=0.0,
@@ -524,10 +526,10 @@ SHORT_WARM_MODEL_PARAMETERS = ModelParameters(
 LONG_NON_MEDIUM_MODEL_PARAMETERS = ModelParameters(
     compounds={
         "SOFT": CompoundParameters(
-            pace_offset=-2.4,
+            pace_offset=-2.5,
             grace_laps=4,
             deg_rate=0.11,
-            temp_pace_scale=-0.1,
+            temp_pace_scale=-0.05,
             temp_deg_scale=0.075,
             race_length_deg_scale=0.2,
         ),
@@ -535,12 +537,12 @@ LONG_NON_MEDIUM_MODEL_PARAMETERS = ModelParameters(
             pace_offset=0.2,
             grace_laps=13,
             deg_rate=0.05,
-            temp_pace_scale=0.05,
+            temp_pace_scale=-0.1,
             temp_deg_scale=0.075,
             race_length_deg_scale=0.1,
         ),
         "HARD": CompoundParameters(
-            pace_offset=1.55,
+            pace_offset=1.6,
             grace_laps=20,
             deg_rate=0.018,
             temp_pace_scale=-0.1,
@@ -549,7 +551,8 @@ LONG_NON_MEDIUM_MODEL_PARAMETERS = ModelParameters(
         ),
     },
     lap_progress_pace_scale=0.0,
-    post_stop_opening_bias_scale=0.1,
+    post_stop_opening_bias_scale=-0.025,
+    additional_stop_penalty=3.8,
 )
 
 
