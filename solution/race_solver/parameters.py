@@ -597,6 +597,7 @@ def replace_parameter(
         post_stop_opening_bias_scale=model.post_stop_opening_bias_scale,
         additional_stop_penalty=model.additional_stop_penalty,
         medium_one_stop_opening_bias_scale=model.medium_one_stop_opening_bias_scale,
+        hard_loop_extreme_temp_penalty=model.hard_loop_extreme_temp_penalty,
     )
 
 
@@ -636,6 +637,7 @@ def model_to_dict(model: ModelParameters) -> dict[str, dict[str, float | int]]:
             "post_stop_opening_bias_scale": model.post_stop_opening_bias_scale,
             "additional_stop_penalty": model.additional_stop_penalty,
             "medium_one_stop_opening_bias_scale": model.medium_one_stop_opening_bias_scale,
+            "hard_loop_extreme_temp_penalty": model.hard_loop_extreme_temp_penalty,
         },
         "compounds": {
             compound: {

@@ -137,6 +137,23 @@ def is_medium_one_stop_opening_stint(
     )
 
 
+def is_extreme_temperature(config: RaceConfig) -> bool:
+    """Return whether the race sits in the historically difficult temp tails."""
+
+    return config.track_temp <= 24 or config.track_temp >= 37
+
+
+def is_hard_loop_two_stop_plan(driver_plan: DriverPlan) -> bool:
+    """Return whether a plan starts and ends on HARD across two pit stops."""
+
+    return (
+        driver_plan.stop_count == 2
+        and len(driver_plan.stints) == 3
+        and driver_plan.stints[0].compound == "HARD"
+        and driver_plan.stints[-1].compound == "HARD"
+    )
+
+
 def restart_opening_profile(compound: str) -> tuple[float, ...]:
     """Return the fixed restart opening shape for each compound.
 
@@ -323,6 +340,11 @@ def driver_score_breakdown(
     base_race_time = config.base_lap_time * config.total_laps
     pit_stop_time = config.pit_lane_time * driver_plan.stop_count
     additional_stop_time = extra_stop_time(driver_plan, resolved_model)
+    hard_loop_penalty_time = hard_loop_extreme_temp_time(
+        config,
+        driver_plan,
+        resolved_model,
+    )
     opening_commitment_time = medium_one_stop_opening_time(
         config,
         driver_plan,
@@ -339,12 +361,14 @@ def driver_score_breakdown(
         base_race_time=base_race_time,
         pit_stop_time=pit_stop_time,
         additional_stop_time=additional_stop_time,
+        hard_loop_penalty_time=hard_loop_penalty_time,
         opening_commitment_time=opening_commitment_time,
         tire_penalty_time=tire_penalty_time,
         total_time=(
             base_race_time
             + pit_stop_time
             + additional_stop_time
+            + hard_loop_penalty_time
             + opening_commitment_time
             + tire_penalty_time
         ),
@@ -368,6 +392,11 @@ def driver_total_time(
     base_race_time = config.base_lap_time * config.total_laps
     pit_stop_time = config.pit_lane_time * driver_plan.stop_count
     additional_stop_time = extra_stop_time(driver_plan, resolved_model)
+    hard_loop_penalty_time = hard_loop_extreme_temp_time(
+        config,
+        driver_plan,
+        resolved_model,
+    )
     opening_commitment_time = medium_one_stop_opening_time(
         config,
         driver_plan,
@@ -381,6 +410,7 @@ def driver_total_time(
         base_race_time
         + pit_stop_time
         + additional_stop_time
+        + hard_loop_penalty_time
         + opening_commitment_time
         + tire_penalty_time
     )
@@ -399,6 +429,26 @@ def extra_stop_time(
     """
 
     return model.additional_stop_penalty * max(0, driver_plan.stop_count - 1)
+
+
+def hard_loop_extreme_temp_time(
+    config: RaceConfig,
+    driver_plan: DriverPlan,
+    model: ModelParameters,
+) -> float:
+    """Return the extra cost for hard-led two-stop loops in temp extremes.
+
+    Held-out residuals still show `HARD->...->HARD` two-stop plans landing a
+    little too high in cool and hot races. A small explicit cost is cleaner
+    than stretching the generic stop penalty because it only touches the
+    specific loop family the data keeps flagging.
+    """
+
+    if not is_extreme_temperature(config):
+        return 0.0
+    if not is_hard_loop_two_stop_plan(driver_plan):
+        return 0.0
+    return model.hard_loop_extreme_temp_penalty
 
 
 def medium_one_stop_opening_time(

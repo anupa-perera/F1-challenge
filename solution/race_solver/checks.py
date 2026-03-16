@@ -113,6 +113,51 @@ def run_self_checks() -> None:
     assert driver_total_time(config, two_stop_plan, model=extra_stop_model) > (
         driver_total_time(config, one_stop_plan, model=extra_stop_model)
     )
+    hard_loop_model = replace_parameter(
+        DEFAULT_MODEL_PARAMETERS,
+        None,
+        "hard_loop_extreme_temp_penalty",
+        1.15,
+    )
+    hard_loop_hot_race = RaceConfig(
+        track="HardLoopHot",
+        total_laps=58,
+        base_lap_time=87.5,
+        pit_lane_time=21.0,
+        track_temp=38,
+    )
+    hard_loop_plan = build_driver_plan(
+        total_laps=58,
+        strategy={
+            "driver_id": "D014",
+            "starting_tire": "HARD",
+            "pit_stops": [
+                {"lap": 16, "from_tire": "HARD", "to_tire": "MEDIUM"},
+                {"lap": 37, "from_tire": "MEDIUM", "to_tire": "HARD"},
+            ],
+        },
+    )
+    hard_non_loop_plan = build_driver_plan(
+        total_laps=58,
+        strategy={
+            "driver_id": "D015",
+            "starting_tire": "HARD",
+            "pit_stops": [
+                {"lap": 16, "from_tire": "HARD", "to_tire": "MEDIUM"},
+                {"lap": 37, "from_tire": "MEDIUM", "to_tire": "SOFT"},
+            ],
+        },
+    )
+    assert driver_score_breakdown(
+        hard_loop_hot_race,
+        hard_loop_plan,
+        model=hard_loop_model,
+    ).hard_loop_penalty_time == 1.15
+    assert driver_score_breakdown(
+        hard_loop_hot_race,
+        hard_non_loop_plan,
+        model=hard_loop_model,
+    ).hard_loop_penalty_time == 0.0
     medium_opening_model = replace_parameter(
         DEFAULT_MODEL_PARAMETERS,
         None,

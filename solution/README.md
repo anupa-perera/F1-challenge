@@ -82,6 +82,10 @@ The solver is organized so each file answers one question:
   much net credit to many two-stop strategies even after explicit pit-lane time
   was included, so the live model treats the second stop as slightly more
   costly than a pure tire reset.
+- The scorer also applies a narrow hard-loop penalty in temperature extremes.
+  Held-out residuals kept overrating `HARD->...->HARD` two-stop loops in cool
+  and hot races, so the live model prices that specific family explicitly
+  instead of inflating the generic stop penalty for every two-stop plan.
 - The scorer also adds a small opening commitment cost for one-stop MEDIUM
   starters in medium-length races. Held-out crossover errors showed those
   plans were still a bit too optimistic against mirrored alternatives, so the
