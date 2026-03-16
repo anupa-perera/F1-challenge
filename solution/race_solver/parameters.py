@@ -250,7 +250,7 @@ MEDIUM_HIGH_PIT_COOL_MODEL_PARAMETERS = ModelParameters(
         medium_to_soft=-0.08,
         medium_to_hard=0.02,
         hard_to_soft=0.12,
-        hard_to_medium=0.04,
+        hard_to_medium=-0.12,
     ),
     two_stop_loops=TwoStopLoopAdjustments(
         soft_to_medium_to_soft=-0.25,
@@ -653,7 +653,7 @@ LONG_NON_MEDIUM_MODEL_PARAMETERS = ModelParameters(
     },
     lap_progress_pace_scale=0.0,
     post_stop_opening_bias_scale=0.3,
-    additional_stop_penalty=4.0,
+    additional_stop_penalty=4.6,
     hard_loop_extreme_temp_penalty=2.0,
     one_stop_arcs=OneStopArcAdjustments(
         soft_to_hard=0.06,
@@ -667,7 +667,7 @@ LONG_NON_MEDIUM_MODEL_PARAMETERS = ModelParameters(
         medium_to_soft_to_medium=-0.5,
         medium_to_hard_to_medium=1.0,
         hard_to_soft_to_hard=0.8,
-        hard_to_medium_to_hard=0.8,
+        hard_to_medium_to_hard=2.0,
     ),
 )
 
