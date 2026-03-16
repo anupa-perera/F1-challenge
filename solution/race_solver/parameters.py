@@ -232,7 +232,7 @@ MEDIUM_HIGH_PIT_HOT_MODEL_PARAMETERS = ModelParameters(
         ),
     },
     lap_progress_pace_scale=0.0,
-    post_stop_opening_bias_scale=0.15,
+    post_stop_opening_bias_scale=0.05,
 )
 
 
@@ -529,7 +529,7 @@ LONG_NON_MEDIUM_MODEL_PARAMETERS = ModelParameters(
             pace_offset=-2.5,
             grace_laps=4,
             deg_rate=0.11,
-            temp_pace_scale=-0.05,
+            temp_pace_scale=-0.1,
             temp_deg_scale=0.075,
             race_length_deg_scale=0.2,
         ),
@@ -551,8 +551,10 @@ LONG_NON_MEDIUM_MODEL_PARAMETERS = ModelParameters(
         ),
     },
     lap_progress_pace_scale=0.0,
-    post_stop_opening_bias_scale=-0.025,
-    additional_stop_penalty=3.8,
+    post_stop_opening_bias_scale=0.0,
+    additional_stop_penalty=3.9,
+    hard_loop_extreme_temp_penalty=2.0,
+    hard_to_softer_one_stop_penalty=0.01,
 )
 
 
