@@ -78,7 +78,15 @@ def build_pair_features(
     *,
     cost_gap: float,
     rank_gap: int,
+    left_rank: int,
+    total_drivers: int,
+    left_gap_from_prev: float,
+    right_gap_to_next: float,
+    left_gap_to_leader: float,
+    right_gap_to_leader: float,
 ) -> list[float]:
+    right_rank = left_rank + rank_gap
+    rank_denominator = max(1, total_drivers - 1)
     pair_features: list[float] = []
     pair_features.extend(_float32(left_vector[index]) for index in CONTEXT_FEATURE_INDEXES)
     pair_features.extend(_float32(left_vector[index]) for index in PLAN_FEATURE_INDEXES)
@@ -89,6 +97,12 @@ def build_pair_features(
     )
     pair_features.append(_float32(cost_gap))
     pair_features.append(_float32(float(rank_gap)))
+    pair_features.append(_float32(left_rank / rank_denominator))
+    pair_features.append(_float32(right_rank / rank_denominator))
+    pair_features.append(_float32(left_gap_from_prev))
+    pair_features.append(_float32(right_gap_to_next))
+    pair_features.append(_float32(left_gap_to_leader))
+    pair_features.append(_float32(right_gap_to_leader))
     return pair_features
 
 
@@ -107,18 +121,32 @@ def rerank_close_pairs(
         driver_id: _float32(strategy_cost)
         for driver_id, strategy_cost in zip(driver_ids, strategy_costs)
     }
+    leader_cost = min(strategy_cost_by_driver.values()) if strategy_cost_by_driver else 0.0
 
     for _ in range(MAX_PASSES):
         changed = False
         for position in range(len(ordered_ids) - 1):
             left_driver_id = ordered_ids[position]
             right_driver_id = ordered_ids[position + 1]
+            left_cost = strategy_cost_by_driver[left_driver_id]
+            right_cost = strategy_cost_by_driver[right_driver_id]
             cost_gap = (
-                strategy_cost_by_driver[right_driver_id]
-                - strategy_cost_by_driver[left_driver_id]
+                right_cost
+                - left_cost
             )
             if cost_gap <= 0.0 or cost_gap > COST_GAP_THRESHOLD:
                 continue
+
+            left_gap_from_prev = (
+                left_cost - strategy_cost_by_driver[ordered_ids[position - 1]]
+                if position > 0
+                else 1.0
+            )
+            right_gap_to_next = (
+                strategy_cost_by_driver[ordered_ids[position + 2]] - right_cost
+                if position + 2 < len(ordered_ids)
+                else 1.0
+            )
 
             probability_left_ahead = predict_proba_left_ahead(
                 build_pair_features(
@@ -126,6 +154,12 @@ def rerank_close_pairs(
                     vector_by_driver[right_driver_id],
                     cost_gap=cost_gap,
                     rank_gap=1,
+                    left_rank=position,
+                    total_drivers=len(ordered_ids),
+                    left_gap_from_prev=left_gap_from_prev,
+                    right_gap_to_next=right_gap_to_next,
+                    left_gap_to_leader=left_cost - leader_cost,
+                    right_gap_to_leader=right_cost - leader_cost,
                 )
             )
             if probability_left_ahead < SWAP_THRESHOLD:

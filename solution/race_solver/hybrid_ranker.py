@@ -10,7 +10,7 @@ into the evaluator path.
 from dataclasses import dataclass
 import json
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Sequence
 
 import numpy as np
 from sklearn.ensemble import HistGradientBoostingClassifier
@@ -161,7 +161,16 @@ PAIR_FEATURE_NAMES = (
     + tuple(f"left::{FEATURE_NAMES[index]}" for index in PLAN_FEATURE_INDEXES)
     + tuple(f"right::{FEATURE_NAMES[index]}" for index in PLAN_FEATURE_INDEXES)
     + tuple(f"delta::{FEATURE_NAMES[index]}" for index in DELTA_FEATURE_INDEXES)
-    + ("pair::strategy_cost_gap", "pair::baseline_rank_gap")
+    + (
+        "pair::strategy_cost_gap",
+        "pair::baseline_rank_gap",
+        "pair::left_rank_norm",
+        "pair::right_rank_norm",
+        "pair::left_gap_from_prev",
+        "pair::right_gap_to_next",
+        "pair::left_gap_to_leader",
+        "pair::right_gap_to_leader",
+    )
 )
 
 
@@ -250,10 +259,20 @@ def _close_pair_feature_row(
     left_index: int,
     right_index: int,
     *,
+    left_position: int,
+    baseline_order: Sequence[int],
     baseline_rank_gap: int,
 ) -> np.ndarray:
     left_row = matrix.feature_matrix[left_index]
     right_row = matrix.feature_matrix[right_index]
+    previous_gap = float(matrix.strategy_costs[left_index] - matrix.strategy_costs[baseline_order[left_position - 1]]) if left_position > 0 else 1.0
+    right_position = left_position + baseline_rank_gap
+    next_gap = (
+        float(matrix.strategy_costs[baseline_order[right_position + 1]] - matrix.strategy_costs[right_index])
+        if right_position + 1 < len(baseline_order)
+        else 1.0
+    )
+    leader_cost = float(matrix.strategy_costs[baseline_order[0]])
     return np.concatenate(
         (
             left_row[list(CONTEXT_FEATURE_INDEXES)],
@@ -264,6 +283,12 @@ def _close_pair_feature_row(
                 [
                     float(matrix.strategy_costs[right_index] - matrix.strategy_costs[left_index]),
                     float(baseline_rank_gap),
+                    float(left_position / max(1, len(baseline_order) - 1)),
+                    float(right_position / max(1, len(baseline_order) - 1)),
+                    previous_gap,
+                    next_gap,
+                    float(matrix.strategy_costs[left_index] - leader_cost),
+                    float(matrix.strategy_costs[right_index] - leader_cost),
                 ],
                 dtype=np.float32,
             ),
@@ -308,6 +333,8 @@ def _build_close_pair_dataset(
                         matrix,
                         left_index,
                         right_index,
+                        left_position=left_position,
+                        baseline_order=baseline_order,
                         baseline_rank_gap=(right_position - left_position),
                     )
                 )
@@ -439,6 +466,8 @@ def predict_order_for_close_pair_model(
                 matrix,
                 left_index,
                 right_index,
+                left_position=position,
+                baseline_order=ordered_indexes,
                 baseline_rank_gap=1,
             ).reshape(1, -1)
             probability_left_ahead = float(
