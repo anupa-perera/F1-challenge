@@ -55,6 +55,15 @@ MIRRORED_ONE_STOP_FAMILY_PAIRS = frozenset(
     }
 )
 MIRRORED_ONE_STOP_COST_GAP_THRESHOLD = 0.22
+HARD_MIRRORED_ONE_STOP_FAMILY_PAIRS = frozenset(
+    {
+        ("HARD->SOFT / 1 stop", "SOFT->HARD / 1 stop"),
+        ("SOFT->HARD / 1 stop", "HARD->SOFT / 1 stop"),
+        ("HARD->MEDIUM / 1 stop", "MEDIUM->HARD / 1 stop"),
+        ("MEDIUM->HARD / 1 stop", "HARD->MEDIUM / 1 stop"),
+    }
+)
+HARD_MIRRORED_ONE_STOP_SWAP_THRESHOLD = 0.533
 
 
 def _float32(value: float) -> float:
@@ -99,6 +108,19 @@ def rerank_cost_gap_threshold(
     ):
         return max(COST_GAP_THRESHOLD, MIRRORED_ONE_STOP_COST_GAP_THRESHOLD)
     return COST_GAP_THRESHOLD
+
+
+def rerank_swap_threshold(
+    left_family: str | None,
+    right_family: str | None,
+) -> float:
+    if (
+        left_family is not None
+        and right_family is not None
+        and (left_family, right_family) in HARD_MIRRORED_ONE_STOP_FAMILY_PAIRS
+    ):
+        return max(SWAP_THRESHOLD, HARD_MIRRORED_ONE_STOP_SWAP_THRESHOLD)
+    return SWAP_THRESHOLD
 
 
 def build_pair_features(
@@ -166,6 +188,8 @@ def rerank_close_pairs(
         for position in range(len(ordered_ids) - 1):
             left_driver_id = ordered_ids[position]
             right_driver_id = ordered_ids[position + 1]
+            left_family = family_by_driver.get(left_driver_id)
+            right_family = family_by_driver.get(right_driver_id)
             left_cost = strategy_cost_by_driver[left_driver_id]
             right_cost = strategy_cost_by_driver[right_driver_id]
             cost_gap = (
@@ -173,8 +197,8 @@ def rerank_close_pairs(
                 - left_cost
             )
             if cost_gap <= 0.0 or cost_gap > rerank_cost_gap_threshold(
-                family_by_driver.get(left_driver_id),
-                family_by_driver.get(right_driver_id),
+                left_family,
+                right_family,
             ):
                 continue
 
@@ -203,7 +227,10 @@ def rerank_close_pairs(
                     right_gap_to_leader=right_cost - leader_cost,
                 )
             )
-            if probability_left_ahead < SWAP_THRESHOLD:
+            if probability_left_ahead < rerank_swap_threshold(
+                left_family,
+                right_family,
+            ):
                 ordered_ids[position], ordered_ids[position + 1] = (
                     ordered_ids[position + 1],
                     ordered_ids[position],

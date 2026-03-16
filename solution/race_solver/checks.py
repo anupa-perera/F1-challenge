@@ -10,6 +10,7 @@ from .parameters import (
 from .parsing import build_driver_plan
 from .pair_reranker import rerank_finishing_order
 from .pair_reranker import rerank_cost_gap_threshold
+from .pair_reranker import rerank_swap_threshold
 from .runtime_gate import (
     runtime_context_key,
     runtime_fallback_context_key,
@@ -417,4 +418,11 @@ def run_self_checks() -> None:
     ) > rerank_cost_gap_threshold(
         "SOFT->HARD / 1 stop",
         "MEDIUM->HARD / 1 stop",
+    )
+    assert rerank_swap_threshold(
+        "HARD->SOFT / 1 stop",
+        "SOFT->HARD / 1 stop",
+    ) > rerank_swap_threshold(
+        "SOFT->MEDIUM / 1 stop",
+        "MEDIUM->SOFT / 1 stop",
     )

@@ -40,8 +40,9 @@ The solver is organized so each file answers one question:
 - `race_solver/pair_reranker.py`
   Applies the exported close-pair hybrid model as a narrow deterministic
   tie-breaker on top of the scorer's baseline order, including a slightly
-  wider gate for mirrored one-stop arc pairs that the live model consistently
-  knows how to fix.
+  wider gate for mirrored one-stop arc pairs and a stricter swap policy for
+  hard-led mirrored one-stop pairs that the live model consistently knows how
+  to fix.
 - `race_solver/pair_reranker_trees.py`
   Auto-generated pure-Python tree constants exported from offline training.
 - `race_solver/reporting.py`
@@ -100,6 +101,9 @@ The solver is organized so each file answers one question:
   - mirrored one-stop arc pairs are allowed a slightly wider cost-gap window
     because validation showed the learned reranker was right about many of
     those cases but the old global gate never let it act
+  - hard-led mirrored one-stop pairs also use a higher swap threshold because
+    those cases still needed more aggressive reranking even after the wider
+    gate was enabled
   - it swaps them only when the model is confident enough
   - the current exported model is trained on both adjacent and second-neighbor
     examples (`max_rank_gap=2`), but runtime still only performs adjacent swaps
@@ -264,6 +268,8 @@ worth keeping because they made the project more reliable and easier to evolve.
    - the learned layer only considers very close adjacent pairs
    - mirrored one-stop arc pairs get a wider cost-gap gate than other pairs
      because that is the strongest repeated blocked-swap pattern in validation
+   - hard-led mirrored one-stop pairs also get a higher swap threshold because
+     the reranker still tended to stay too conservative on those families
    - it swaps them only when the classifier is confident enough
    This keeps the learned layer in the role of a tie-breaker instead of
    replacing the whole scoring model.
