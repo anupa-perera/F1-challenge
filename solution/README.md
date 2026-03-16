@@ -166,6 +166,49 @@ The solver is organized so each file answers one question:
   the old manual gate and was selected because it improved held-out exact order
   while reducing routing complexity.
 
+## Ground Rules
+
+These are the rules used while exploring and improving the solver. They are
+worth keeping because they made the project more reliable and easier to evolve.
+
+- Start from first principles:
+  every change must answer one real question about strategy cost, not just add
+  another tweak because it is easy to code.
+- Keep the runtime seam clean:
+  `race_simulator.py` and the submission path stay small, deterministic, and
+  evaluator-safe. Heavy experiments belong in offline scripts.
+- Prefer structural improvements over parameter churn:
+  the biggest gains came from changing what the model can express, not from
+  searching harder inside a weak formula.
+- Use historical data as the main judge:
+  the 100-case local suite is useful, but it is too small to be the main
+  optimization target. Full held-out validation is the real commit gate.
+- Treat the local suite as a guardrail:
+  avoid regressions when possible, but do not overfit to it at the expense of
+  broader historical validity.
+- Keep learning narrow and disciplined:
+  learned models should start as offline tools, then as small tie-breakers, and
+  only become part of runtime after export and parity checks.
+- Separate training from serving:
+  `scikit-learn` is allowed offline, but submission runtime should stay pure
+  Python unless there is a very strong reason not to.
+- Make parity a hard requirement for exported models:
+  if an exported pure-Python model does not reproduce the offline model closely,
+  do not ship it.
+- Keep failed experiments disposable:
+  if an idea does not survive validation, remove it fully instead of leaving
+  dead parameters, branches, or helper abstractions behind.
+- Keep one source of truth per concern:
+  routing lives in the runtime gate, scoring lives in the scorer, evaluation
+  lives in the evaluation helpers, and submission validation lives outside the
+  solver.
+- Add checks for the truths that matter:
+  self-checks protect scorer math, and historical regression checks protect the
+  crossover and family-level behaviors the model must preserve.
+- Prefer small, reversible steps:
+  each experiment should be easy to explain, easy to validate, and easy to
+  remove if it fails.
+
 ## Workflow
 
 1. Update the scoring model in `race_solver/scoring.py` or parameters in `race_solver/parameters.py`.
