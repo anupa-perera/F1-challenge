@@ -290,6 +290,45 @@ worth keeping because they made the project more reliable and easier to evolve.
 - Prefer small, reversible steps:
   each experiment should be easy to explain, easy to validate, and easy to
   remove if it fails.
+- Keep the baseline record current:
+  any commit that changes the live runtime model, exported reranker artifact,
+  frozen parameters, or validated metrics should also update this README so the
+  current baseline, recent progression, and limitations stay true.
+
+## Baseline Maintenance Rule
+
+On every deserving commit, update the README before or with the commit.
+
+A commit is deserving if it changes any of these:
+
+- live submission behavior
+- exported reranker policy or tree artifact
+- frozen scorer parameters
+- held-out validation numbers
+- local suite numbers
+- the main explanation of what currently limits accuracy
+
+A commit usually does not need a README baseline refresh if it is only:
+
+- a reverted experiment that never became the live path
+- pure cleanup with no behavior change
+- tooling-only work with no effect on the shipped model
+- analysis-only exploration that does not change the accepted baseline
+
+When a commit does deserve a README update, refresh these parts:
+
+- `Current Baseline`
+- `Progress So Far`
+- `Current Limitations` if the main hotspot changed
+
+And re-run the standard validation set:
+
+- `python solution/run_self_checks.py`
+- `python solution/verify_submission.py`
+- `python solution/run_local_suite.py`
+- `python solution/check_historical_regressions.py --split validation`
+
+This keeps the README as a real source of truth instead of a stale summary.
 
 ## Current Limitations
 
