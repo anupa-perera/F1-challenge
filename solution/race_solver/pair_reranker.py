@@ -64,6 +64,12 @@ HARD_MIRRORED_ONE_STOP_FAMILY_PAIRS = frozenset(
     }
 )
 HARD_MIRRORED_ONE_STOP_SWAP_THRESHOLD = 0.533
+FAMILY_SPECIFIC_COST_GAP_THRESHOLDS = {
+    ("SOFT->HARD / 1 stop", "MEDIUM->HARD / 1 stop"): 0.34,
+    ("SOFT->HARD / 1 stop", "HARD->MEDIUM / 1 stop"): 0.34,
+    ("HARD->SOFT / 1 stop", "MEDIUM->HARD / 1 stop"): 0.34,
+    ("HARD->SOFT / 1 stop", "HARD->MEDIUM / 1 stop"): 0.34,
+}
 
 
 def _float32(value: float) -> float:
@@ -101,13 +107,22 @@ def rerank_cost_gap_threshold(
     left_family: str | None,
     right_family: str | None,
 ) -> float:
+    threshold = COST_GAP_THRESHOLD
     if (
         left_family is not None
         and right_family is not None
         and (left_family, right_family) in MIRRORED_ONE_STOP_FAMILY_PAIRS
     ):
-        return max(COST_GAP_THRESHOLD, MIRRORED_ONE_STOP_COST_GAP_THRESHOLD)
-    return COST_GAP_THRESHOLD
+        threshold = max(threshold, MIRRORED_ONE_STOP_COST_GAP_THRESHOLD)
+    if left_family is not None and right_family is not None:
+        threshold = max(
+            threshold,
+            FAMILY_SPECIFIC_COST_GAP_THRESHOLDS.get(
+                (left_family, right_family),
+                threshold,
+            ),
+        )
+    return threshold
 
 
 def rerank_swap_threshold(

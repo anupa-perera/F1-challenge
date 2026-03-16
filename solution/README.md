@@ -42,7 +42,8 @@ The solver is organized so each file answers one question:
   tie-breaker on top of the scorer's baseline order, including a slightly
   wider gate for mirrored one-stop arc pairs and a stricter swap policy for
   hard-led mirrored one-stop pairs that the live model consistently knows how
-  to fix.
+  to fix, plus a tiny threshold table for the highest-value blocked one-stop
+  family orderings.
 - `race_solver/pair_reranker_trees.py`
   Auto-generated pure-Python tree constants exported from offline training.
 - `race_solver/reporting.py`
@@ -104,6 +105,8 @@ The solver is organized so each file answers one question:
   - hard-led mirrored one-stop pairs also use a higher swap threshold because
     those cases still needed more aggressive reranking even after the wider
     gate was enabled
+  - a tiny family threshold table handles the few remaining ordered one-stop
+    pairings that were still strongly blocked even after the mirrored rule
   - it swaps them only when the model is confident enough
   - the current exported model is trained on both adjacent and second-neighbor
     examples (`max_rank_gap=2`), but runtime still only performs adjacent swaps
@@ -270,6 +273,8 @@ worth keeping because they made the project more reliable and easier to evolve.
      because that is the strongest repeated blocked-swap pattern in validation
    - hard-led mirrored one-stop pairs also get a higher swap threshold because
      the reranker still tended to stay too conservative on those families
+   - the last few highest-value blocked ordered one-stop pairs get a small
+     threshold-table override instead of another new model layer
    - it swaps them only when the classifier is confident enough
    This keeps the learned layer in the role of a tie-breaker instead of
    replacing the whole scoring model.

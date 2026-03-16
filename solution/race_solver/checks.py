@@ -417,7 +417,14 @@ def run_self_checks() -> None:
         "SOFT->HARD / 1 stop",
     ) > rerank_cost_gap_threshold(
         "SOFT->HARD / 1 stop",
+        "MEDIUM->SOFT / 1 stop",
+    )
+    assert rerank_cost_gap_threshold(
+        "SOFT->HARD / 1 stop",
         "MEDIUM->HARD / 1 stop",
+    ) > rerank_cost_gap_threshold(
+        "HARD->SOFT / 1 stop",
+        "SOFT->HARD / 1 stop",
     )
     assert rerank_swap_threshold(
         "HARD->SOFT / 1 stop",
