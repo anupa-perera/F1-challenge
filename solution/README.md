@@ -48,6 +48,15 @@ The solver is organized so each file answers one question:
   Loads labeled historical races and applies the deterministic split.
 - `race_solver/calibration.py`
   Evaluates parameter sets and performs the coarse/refine search.
+- `race_solver/hybrid_features.py`
+  Builds offline learned-ranking features from the live deterministic scorer
+  and raw strategy/context structure.
+- `race_solver/hybrid_ranker.py`
+  Houses offline hybrid rankers that sit on top of the deterministic scorer
+  without changing the submission runtime.
+- `train_hybrid_ranker.py`
+  Runs offline hybrid ranking experiments so we can measure whether learned
+  layers have real headroom before touching the evaluator path.
 - `race_solver/learned_gate.py`
   Searches for a small deterministic routing tree over the existing expert models.
 - `race_solver/checks.py`
@@ -70,6 +79,9 @@ The solver is organized so each file answers one question:
   of "good prediction" stays consistent across fitting and diagnostics.
 - Calibration is separate from runtime, so the prediction path stays small.
 - Analysis stays separate from runtime, so we can explore the historical data without bloating the submission path.
+- Hybrid ranking experiments stay separate from runtime too. That lets us test
+  whether a learned reranker has real headroom without risking submission
+  stability or leaking failed experiments into the live solver.
 - Calibration and prediction use a direct total-time scorer, while explanation
   tools still use the richer score-breakdown path for human-readable analysis.
 - Stint math now has one shared implementation path inside the scorer, so
@@ -177,6 +189,14 @@ The solver is organized so each file answers one question:
    `python solution/check_historical_regressions.py`.
    This keeps mirrored-family winner direction, major residual-bias signs, and
    runtime bucket value gains from regressing while iterating on the model.
+13. Test learned rerankers offline with
+   `python solution/train_hybrid_ranker.py --model-type close_pair`.
+   The current promising hybrid shape is intentionally conservative:
+   - the deterministic scorer still provides the baseline 20-driver order
+   - the learned layer only considers very close adjacent pairs
+   - it swaps them only when the classifier is confident enough
+   This keeps the learned layer in the role of a tie-breaker instead of
+   replacing the whole scoring model.
 
 ## Backlog
 
