@@ -39,7 +39,9 @@ The solver is organized so each file answers one question:
   Contains the actual tire penalty and total race scoring logic.
 - `race_solver/pair_reranker.py`
   Applies the exported close-pair hybrid model as a narrow deterministic
-  tie-breaker on top of the scorer's baseline order.
+  tie-breaker on top of the scorer's baseline order, including a slightly
+  wider gate for mirrored one-stop arc pairs that the live model consistently
+  knows how to fix.
 - `race_solver/pair_reranker_trees.py`
   Auto-generated pure-Python tree constants exported from offline training.
 - `race_solver/reporting.py`
@@ -95,6 +97,9 @@ The solver is organized so each file answers one question:
   - the deterministic scorer still produces the baseline order
   - the exported reranker only inspects adjacent pairs with very small
     strategy-cost gaps
+  - mirrored one-stop arc pairs are allowed a slightly wider cost-gap window
+    because validation showed the learned reranker was right about many of
+    those cases but the old global gate never let it act
   - it swaps them only when the model is confident enough
   - the current exported model is trained on both adjacent and second-neighbor
     examples (`max_rank_gap=2`), but runtime still only performs adjacent swaps
@@ -257,6 +262,8 @@ worth keeping because they made the project more reliable and easier to evolve.
    The current promising hybrid shape is intentionally conservative:
    - the deterministic scorer still provides the baseline 20-driver order
    - the learned layer only considers very close adjacent pairs
+   - mirrored one-stop arc pairs get a wider cost-gap gate than other pairs
+     because that is the strongest repeated blocked-swap pattern in validation
    - it swaps them only when the classifier is confident enough
    This keeps the learned layer in the role of a tie-breaker instead of
    replacing the whole scoring model.

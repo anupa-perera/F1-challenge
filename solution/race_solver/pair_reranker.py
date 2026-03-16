@@ -15,6 +15,7 @@ from typing import Sequence
 from .hybrid_features import extract_race_feature_rows
 from .models import DriverPlan, ModelParameters, RaceConfig
 from .scoring import predict_finishing_order
+from .strategy_features import strategy_family
 
 try:
     from .pair_reranker_trees import (
@@ -39,6 +40,21 @@ except ImportError:
     PLAN_FEATURE_INDEXES = ()
     DELTA_FEATURE_INDEXES = ()
     HAS_PAIR_RERANKER = False
+
+
+# The exported reranker already knows how to resolve these mirrored one-stop
+# families fairly often; widening only this gate keeps the change narrow.
+MIRRORED_ONE_STOP_FAMILY_PAIRS = frozenset(
+    {
+        ("HARD->SOFT / 1 stop", "SOFT->HARD / 1 stop"),
+        ("SOFT->HARD / 1 stop", "HARD->SOFT / 1 stop"),
+        ("HARD->MEDIUM / 1 stop", "MEDIUM->HARD / 1 stop"),
+        ("MEDIUM->HARD / 1 stop", "HARD->MEDIUM / 1 stop"),
+        ("SOFT->MEDIUM / 1 stop", "MEDIUM->SOFT / 1 stop"),
+        ("MEDIUM->SOFT / 1 stop", "SOFT->MEDIUM / 1 stop"),
+    }
+)
+MIRRORED_ONE_STOP_COST_GAP_THRESHOLD = 0.22
 
 
 def _float32(value: float) -> float:
@@ -70,6 +86,19 @@ def predict_proba_left_ahead(pair_features: Sequence[float]) -> float:
 
     exp_value = math.exp(raw_score)
     return exp_value / (1.0 + exp_value)
+
+
+def rerank_cost_gap_threshold(
+    left_family: str | None,
+    right_family: str | None,
+) -> float:
+    if (
+        left_family is not None
+        and right_family is not None
+        and (left_family, right_family) in MIRRORED_ONE_STOP_FAMILY_PAIRS
+    ):
+        return max(COST_GAP_THRESHOLD, MIRRORED_ONE_STOP_COST_GAP_THRESHOLD)
+    return COST_GAP_THRESHOLD
 
 
 def build_pair_features(
@@ -111,6 +140,7 @@ def rerank_close_pairs(
     driver_ids: Sequence[str],
     feature_vectors: Sequence[Sequence[float]],
     strategy_costs: Sequence[float],
+    strategy_families: Sequence[str] | None = None,
 ) -> list[str]:
     ordered_ids = list(driver_ids)
     vector_by_driver = {
@@ -121,6 +151,14 @@ def rerank_close_pairs(
         driver_id: _float32(strategy_cost)
         for driver_id, strategy_cost in zip(driver_ids, strategy_costs)
     }
+    family_by_driver = (
+        {
+            driver_id: family
+            for driver_id, family in zip(driver_ids, strategy_families)
+        }
+        if strategy_families is not None
+        else {}
+    )
     leader_cost = min(strategy_cost_by_driver.values()) if strategy_cost_by_driver else 0.0
 
     for _ in range(MAX_PASSES):
@@ -134,7 +172,10 @@ def rerank_close_pairs(
                 right_cost
                 - left_cost
             )
-            if cost_gap <= 0.0 or cost_gap > COST_GAP_THRESHOLD:
+            if cost_gap <= 0.0 or cost_gap > rerank_cost_gap_threshold(
+                family_by_driver.get(left_driver_id),
+                family_by_driver.get(right_driver_id),
+            ):
                 continue
 
             left_gap_from_prev = (
@@ -192,8 +233,15 @@ def rerank_finishing_order(
     feature_rows = extract_race_feature_rows(config, tuple(driver_plans))
     row_by_driver = {row.driver_id: row for row in feature_rows}
     ordered_rows = [row_by_driver[driver_id] for driver_id in baseline_order]
+    plan_by_driver = {
+        driver_plan.driver_id: driver_plan for driver_plan in driver_plans
+    }
     return rerank_close_pairs(
         driver_ids=[row.driver_id for row in ordered_rows],
         feature_vectors=[row.vector for row in ordered_rows],
         strategy_costs=[row.strategy_cost for row in ordered_rows],
+        strategy_families=[
+            strategy_family(plan_by_driver[row.driver_id])
+            for row in ordered_rows
+        ],
     )
