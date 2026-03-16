@@ -307,6 +307,7 @@ def driver_score_breakdown(
     resolved_model = _resolve_model(config, model)
     base_race_time = config.base_lap_time * config.total_laps
     pit_stop_time = config.pit_lane_time * driver_plan.stop_count
+    additional_stop_time = extra_stop_time(driver_plan, resolved_model)
     stints = tuple(
         stint_score_breakdown(stint=stint, config=config, model=resolved_model)
         for stint in driver_plan.stints
@@ -317,8 +318,14 @@ def driver_score_breakdown(
         driver_id=driver_plan.driver_id,
         base_race_time=base_race_time,
         pit_stop_time=pit_stop_time,
+        additional_stop_time=additional_stop_time,
         tire_penalty_time=tire_penalty_time,
-        total_time=base_race_time + pit_stop_time + tire_penalty_time,
+        total_time=(
+            base_race_time
+            + pit_stop_time
+            + additional_stop_time
+            + tire_penalty_time
+        ),
         stints=stints,
     )
 
@@ -338,11 +345,27 @@ def driver_total_time(
     resolved_model = _resolve_model(config, model)
     base_race_time = config.base_lap_time * config.total_laps
     pit_stop_time = config.pit_lane_time * driver_plan.stop_count
+    additional_stop_time = extra_stop_time(driver_plan, resolved_model)
     tire_penalty_time = sum(
         stint_penalty_total(stint=stint, config=config, model=resolved_model)
         for stint in driver_plan.stints
     )
-    return base_race_time + pit_stop_time + tire_penalty_time
+    return base_race_time + pit_stop_time + additional_stop_time + tire_penalty_time
+
+
+def extra_stop_time(
+    driver_plan: DriverPlan,
+    model: ModelParameters,
+) -> float:
+    """Return the extra structural cost for stops beyond the first.
+
+    Historical races still showed many two-stop plans slightly outperforming the
+    hidden simulator even after explicit pit-lane time was included. This term
+    lets the scorer price the second stop as a little more disruptive than a
+    pure tire reset without inventing a large new mechanism.
+    """
+
+    return model.additional_stop_penalty * max(0, driver_plan.stop_count - 1)
 
 
 def predict_finishing_order(

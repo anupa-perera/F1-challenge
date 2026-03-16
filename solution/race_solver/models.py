@@ -60,6 +60,7 @@ class ModelParameters:
     compounds: Mapping[str, CompoundParameters]
     lap_progress_pace_scale: float
     post_stop_opening_bias_scale: float = 0.0
+    additional_stop_penalty: float = 1.8
 
 
 @dataclass(frozen=True)
@@ -99,6 +100,7 @@ class DriverScoreBreakdown:
     driver_id: str
     base_race_time: float
     pit_stop_time: float
+    additional_stop_time: float
     tire_penalty_time: float
     total_time: float
     stints: tuple[StintScoreBreakdown, ...]

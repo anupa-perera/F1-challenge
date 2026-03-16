@@ -49,6 +49,7 @@ PARAMETER_BOUNDS = {
     "race_length_deg_scale": {compound: (-0.2, 0.2) for compound in COMPOUND_ORDER},
     "lap_progress_pace_scale": {None: (-0.75, 0.75)},
     "post_stop_opening_bias_scale": {None: (-0.5, 0.5)},
+    "additional_stop_penalty": {None: (0.0, 4.0)},
 }
 COARSE_STEPS = {
     "pace_offset": 0.1,
@@ -59,6 +60,7 @@ COARSE_STEPS = {
     "race_length_deg_scale": 0.05,
     "lap_progress_pace_scale": 0.05,
     "post_stop_opening_bias_scale": 0.05,
+    "additional_stop_penalty": 0.1,
 }
 REFINE_STEPS = {
     "pace_offset": 0.05,
@@ -69,6 +71,7 @@ REFINE_STEPS = {
     "race_length_deg_scale": 0.025,
     "lap_progress_pace_scale": 0.025,
     "post_stop_opening_bias_scale": 0.025,
+    "additional_stop_penalty": 0.05,
 }
 @dataclass(frozen=True)
 class SearchResult:
@@ -165,6 +168,7 @@ def model_signature(model: ModelParameters) -> tuple[float | int, ...]:
     signature: list[float | int] = [
         round(model.lap_progress_pace_scale, 6),
         round(model.post_stop_opening_bias_scale, 6),
+        round(model.additional_stop_penalty, 6),
     ]
     for compound in COMPOUND_ORDER:
         params = model.compounds[compound]
@@ -305,6 +309,7 @@ def search_sequence() -> list[tuple[str | None, str]]:
     field_order = [
         "lap_progress_pace_scale",
         "post_stop_opening_bias_scale",
+        "additional_stop_penalty",
         "pace_offset",
         "grace_laps",
         "deg_rate",
@@ -314,7 +319,11 @@ def search_sequence() -> list[tuple[str | None, str]]:
     ]
     sequence: list[tuple[str | None, str]] = []
     for field_name in field_order:
-        if field_name in {"lap_progress_pace_scale", "post_stop_opening_bias_scale"}:
+        if field_name in {
+            "lap_progress_pace_scale",
+            "post_stop_opening_bias_scale",
+            "additional_stop_penalty",
+        }:
             sequence.append((None, field_name))
             continue
         for compound in COMPOUND_ORDER:

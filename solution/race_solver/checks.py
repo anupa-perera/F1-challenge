@@ -80,6 +80,39 @@ def run_self_checks() -> None:
         driver_total_time(config, driver_plan)
         - driver_score_breakdown(config, driver_plan).total_time
     ) < 1e-9
+    extra_stop_model = replace_parameter(
+        DEFAULT_MODEL_PARAMETERS,
+        None,
+        "additional_stop_penalty",
+        2.0,
+    )
+    one_stop_plan = build_driver_plan(
+        total_laps=10,
+        strategy={
+            "driver_id": "D010",
+            "starting_tire": "SOFT",
+            "pit_stops": [{"lap": 5, "from_tire": "SOFT", "to_tire": "HARD"}],
+        },
+    )
+    two_stop_plan = build_driver_plan(
+        total_laps=10,
+        strategy={
+            "driver_id": "D011",
+            "starting_tire": "SOFT",
+            "pit_stops": [
+                {"lap": 4, "from_tire": "SOFT", "to_tire": "MEDIUM"},
+                {"lap": 7, "from_tire": "MEDIUM", "to_tire": "HARD"},
+            ],
+        },
+    )
+    assert driver_score_breakdown(
+        config,
+        two_stop_plan,
+        model=extra_stop_model,
+    ).additional_stop_time == 2.0
+    assert driver_total_time(config, two_stop_plan, model=extra_stop_model) > (
+        driver_total_time(config, one_stop_plan, model=extra_stop_model)
+    )
     restart_bias_model = replace_parameter(
         DEFAULT_MODEL_PARAMETERS,
         None,

@@ -77,6 +77,11 @@ The solver is organized so each file answers one question:
   - `HARD` carries a slightly longer warm-up penalty
   That keeps the mechanism compact while pricing restarted durable stints more
   realistically than one shared generic opening shape.
+- The scorer now also carries a small additional penalty for each pit stop
+  beyond the first. Historical residuals showed the model was still giving too
+  much net credit to many two-stop strategies even after explicit pit-lane time
+  was included, so the live model treats the second stop as slightly more
+  costly than a pure tire reset.
 - Runtime now uses a learned, pruned deterministic gate tree over the existing
   expert model catalog instead of a hand-grown bucket list. The frozen runtime
   tree is intentionally small:
