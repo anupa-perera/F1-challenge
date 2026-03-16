@@ -4,6 +4,15 @@ The solver is organized so each file answers one question:
 
 - `race_simulator.py`
   Reads stdin, runs the simulator, writes stdout.
+- `run_self_checks.py`
+  Runs local invariants without touching the evaluator path.
+- `verify_submission.py`
+  Smoke-tests the final submission seam by reading `run_command.txt`,
+  executing the solver from the repository root, and validating the JSON
+  output shape.
+- `run_local_suite.py`
+  Cross-platform local equivalent of `./test_runner.sh` that still executes
+  the solver through `run_command.txt`.
 - `calibrate_model.py`
   Runs the offline parameter search against historical races.
 - `explain_race.py`
@@ -50,6 +59,9 @@ The solver is organized so each file answers one question:
   - runtime: `race_simulator.py` -> parsing -> scoring -> simulation output
   - calibration: `calibrate_model.py` -> historical loader -> calibration -> frozen parameters
   - analysis: `analyze_*.py` -> analysis/reporting helpers -> readable conclusions
+- The runtime entrypoint is intentionally tiny and only does stdin -> parse ->
+  simulate -> stdout. Local checks live in separate scripts so evaluator runs
+  stay aligned with the submission contract.
 - Parsing is separate from scoring, so model changes do not force JSON changes.
 - Runtime routing is separate from fitted parameter storage, so gate changes do
   not force edits to the parameter guardrails and parameter changes do not have
@@ -139,12 +151,18 @@ The solver is organized so each file answers one question:
    over the current expert model catalog.
 3. Freeze the best parameters back into `race_solver/parameters.py`.
 4. Run the solver with `python solution/race_simulator.py < input.json`.
-5. Explain a race with `python solution/explain_race.py < input.json`.
-6. Compare a prediction with `python solution/analyze_case.py --input ... --expected ...`.
-7. Analyze a whole suite with `python solution/analyze_suite.py`.
-8. Mine historical strategy patterns with `python solution/analyze_historical_patterns.py`.
+5. Run local invariants with `python solution/run_self_checks.py`.
+6. Smoke-test the submission seam with `python solution/verify_submission.py`.
+   Add `--run-test-runner` when you want the full `./test_runner.sh` pass from
+   the same script.
+7. Run `python solution/run_local_suite.py` when your local environment does
+   not have the shell tooling required by `./test_runner.sh`.
+8. Explain a race with `python solution/explain_race.py < input.json`.
+9. Compare a prediction with `python solution/analyze_case.py --input ... --expected ...`.
+10. Analyze a whole suite with `python solution/analyze_suite.py`.
+11. Mine historical strategy patterns with `python solution/analyze_historical_patterns.py`.
    Use `--split validation` to inspect held-out residuals before changing the model.
-9. Guard high-support historical truths with
+12. Guard high-support historical truths with
    `python solution/check_historical_regressions.py`.
    This keeps mirrored-family winner direction, major residual-bias signs, and
    runtime bucket value gains from regressing while iterating on the model.
