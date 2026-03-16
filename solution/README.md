@@ -1,5 +1,71 @@
 # Solution Structure
 
+## Current Baseline
+
+The live submission model is a hybrid of:
+
+- a deterministic scorer in `race_solver/scoring.py`
+- a deterministic context gate in `race_solver/runtime_gate.py`
+- a pure-Python close-pair reranker in `race_solver/pair_reranker.py`
+
+The current validated baseline is:
+
+- held-out historical exact: `1811/6000`
+- held-out historical pairwise: `98.2135%`
+- local 100-case suite: `28/100`
+
+These numbers come from the real submission path:
+
+- `python solution/verify_submission.py`
+- `python solution/run_local_suite.py`
+- `python solution/check_historical_regressions.py --split validation`
+
+The important mental model is:
+
+- the scorer still does almost all of the work
+- the reranker only corrects very small local ordering mistakes
+- the reranker is now where most recent gains came from
+- the next big gains will probably need either better reranker features or a
+  scorer-side correction for the remaining medium one-stop hotspot
+
+## Progress So Far
+
+The highest-value improvements so far were structural, not just parameter
+tuning.
+
+1. Nonlinear wear-state scoring:
+   this was the first major jump because it made long stints and compound wear
+   shape more realistic.
+2. Deterministic runtime gate:
+   moving from one global model to a small learned/pruned context tree made the
+   scorer fit different race regimes more honestly.
+3. Plan-level scorer terms:
+   extra-stop cost, one-stop arc terms, two-stop loop terms, and restart bias
+   fixed repeated family-level pricing errors the plain tire curve could not
+   express.
+4. Exported hybrid reranker:
+   the deterministic scorer stayed the backbone, but a learned close-pair model
+   became a safe runtime tie-breaker.
+5. Conservative reranker policy upgrades:
+   most recent gains came from letting that reranker act in the specific
+   one-stop families where validation showed it was right but the old runtime
+   seam was too conservative.
+
+Recent validated runtime progression:
+
+- deterministic scorer baseline before the exported hybrid: about `1652/6000`
+- exported close-pair reranker baseline: `1695/6000`
+- mirrored one-stop gate widening: `1720/6000`
+- hard-mirror confidence increase: `1803/6000`
+- blocked one-stop threshold-table widening: `1811/6000`
+
+The main lesson from this progression is:
+
+- broad new model classes gave headroom
+- narrow data-backed runtime policies converted that headroom into stable gains
+- ad hoc micro-tweaks only helped when they matched a clear repeated residual
+  pattern
+
 The solver is organized so each file answers one question:
 
 - `race_simulator.py`
@@ -224,6 +290,30 @@ worth keeping because they made the project more reliable and easier to evolve.
 - Prefer small, reversible steps:
   each experiment should be easy to explain, easy to validate, and easy to
   remove if it fails.
+
+## Current Limitations
+
+The current solver is much stronger than the earlier pure scorer baseline, but
+it still has clear limits:
+
+- Exact order is still much harder than pairwise correctness.
+  `98%+` pairwise still leaves many races one or two places away from a full
+  exact match.
+- The remaining hotspot is mostly medium-race one-stop ordering.
+  The hardest family is still the `MEDIUM->HARD` versus `HARD->MEDIUM` style
+  crossover inside `medium_high_pit` and nearby contexts.
+- The reranker seam is much healthier now, but it is still conservative by
+  design.
+  It only touches adjacent pairs, so it cannot fix every larger ordering error.
+- The current local 100-case suite is still far below the long-term target.
+  That means the model still needs either stronger reranker features or a new
+  scorer-side correction, not just more threshold tuning.
+
+Because of that, the most likely next improvement directions are:
+
+- better reranker features for the remaining medium one-stop crossover cases
+- scorer-side corrections for the same medium one-stop families
+- only after that, more export/search work if the richer signal is real
 
 ## Workflow
 
