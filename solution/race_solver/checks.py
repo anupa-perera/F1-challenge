@@ -8,6 +8,7 @@ from .parameters import (
     replace_parameter,
 )
 from .parsing import build_driver_plan
+from .pair_reranker import rerank_finishing_order
 from .runtime_gate import (
     runtime_context_key,
     runtime_fallback_context_key,
@@ -408,3 +409,4 @@ def run_self_checks() -> None:
         ),
     )
     assert predict_finishing_order(config, identical_plans) == ["D001", "D002"]
+    assert rerank_finishing_order(config, identical_plans) == ["D001", "D002"]

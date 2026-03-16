@@ -299,6 +299,8 @@ def _build_close_pair_dataset(
                 strategy_cost_gap = float(
                     matrix.strategy_costs[right_index] - matrix.strategy_costs[left_index]
                 )
+                if strategy_cost_gap <= 0.0:
+                    continue
                 if strategy_cost_gap > cost_gap_threshold:
                     break
                 rows.append(
@@ -428,6 +430,8 @@ def predict_order_for_close_pair_model(
             strategy_cost_gap = float(
                 matrix.strategy_costs[right_index] - matrix.strategy_costs[left_index]
             )
+            if strategy_cost_gap <= 0.0:
+                continue
             if strategy_cost_gap > model.cost_gap_threshold:
                 continue
 

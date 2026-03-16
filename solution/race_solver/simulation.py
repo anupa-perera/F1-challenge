@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from .models import ModelParameters, RaceInput
-from .scoring import predict_finishing_order
+from .pair_reranker import rerank_finishing_order
 
 
 def simulate_race(
@@ -14,7 +14,7 @@ def simulate_race(
 ) -> dict[str, Any]:
     return {
         "race_id": race_input.race_id,
-        "finishing_positions": predict_finishing_order(
+        "finishing_positions": rerank_finishing_order(
             config=race_input.config,
             driver_plans=race_input.driver_plans,
             model=model,

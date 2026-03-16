@@ -13,6 +13,9 @@ The solver is organized so each file answers one question:
 - `run_local_suite.py`
   Cross-platform local equivalent of `./test_runner.sh` that still executes
   the solver through `run_command.txt`.
+- `export_hybrid_model.py`
+  Trains and exports the current close-pair hybrid reranker into a pure-Python
+  model artifact for submission-safe runtime use.
 - `calibrate_model.py`
   Runs the offline parameter search against historical races.
 - `explain_race.py`
@@ -34,6 +37,11 @@ The solver is organized so each file answers one question:
   Owns deterministic context routing and fallback relationships for runtime scoring.
 - `race_solver/scoring.py`
   Contains the actual tire penalty and total race scoring logic.
+- `race_solver/pair_reranker.py`
+  Applies the exported close-pair hybrid model as a narrow deterministic
+  tie-breaker on top of the scorer's baseline order.
+- `race_solver/pair_reranker_trees.py`
+  Auto-generated pure-Python tree constants exported from offline training.
 - `race_solver/reporting.py`
   Formats solver output into readable conclusions for debugging and review.
 - `race_solver/analysis.py`
@@ -82,6 +90,14 @@ The solver is organized so each file answers one question:
 - Hybrid ranking experiments stay separate from runtime too. That lets us test
   whether a learned reranker has real headroom without risking submission
   stability or leaking failed experiments into the live solver.
+- The live submission path now uses the conservative hybrid seam that proved
+  itself on held-out history:
+  - the deterministic scorer still produces the baseline order
+  - the exported reranker only inspects adjacent pairs with very small
+    strategy-cost gaps
+  - it swaps them only when the model is confident enough
+  This keeps learning in the role of tie-breaker rather than replacing the
+  whole strategy model.
 - Calibration and prediction use a direct total-time scorer, while explanation
   tools still use the richer score-breakdown path for human-readable analysis.
 - Stint math now has one shared implementation path inside the scorer, so
@@ -197,6 +213,10 @@ The solver is organized so each file answers one question:
    - it swaps them only when the classifier is confident enough
    This keeps the learned layer in the role of a tie-breaker instead of
    replacing the whole scoring model.
+14. Export the chosen close-pair reranker with
+   `python solution/export_hybrid_model.py`.
+   This freezes the sklearn model into `race_solver/pair_reranker_trees.py`
+   and validates bit-for-bit probability parity before runtime imports it.
 
 ## Backlog
 
