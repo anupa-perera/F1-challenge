@@ -70,6 +70,12 @@ FAMILY_SPECIFIC_COST_GAP_THRESHOLDS = {
     ("HARD->SOFT / 1 stop", "MEDIUM->HARD / 1 stop"): 0.34,
     ("HARD->SOFT / 1 stop", "HARD->MEDIUM / 1 stop"): 0.34,
 }
+FAMILY_SPECIFIC_SWAP_THRESHOLDS = {
+    ("SOFT->HARD / 1 stop", "MEDIUM->HARD / 1 stop"): 0.42,
+    ("SOFT->HARD / 1 stop", "HARD->MEDIUM / 1 stop"): 0.42,
+    ("HARD->SOFT / 1 stop", "MEDIUM->HARD / 1 stop"): 0.42,
+    ("HARD->SOFT / 1 stop", "HARD->MEDIUM / 1 stop"): 0.42,
+}
 
 
 def _float32(value: float) -> float:
@@ -129,13 +135,22 @@ def rerank_swap_threshold(
     left_family: str | None,
     right_family: str | None,
 ) -> float:
+    threshold = SWAP_THRESHOLD
     if (
         left_family is not None
         and right_family is not None
         and (left_family, right_family) in HARD_MIRRORED_ONE_STOP_FAMILY_PAIRS
     ):
-        return max(SWAP_THRESHOLD, HARD_MIRRORED_ONE_STOP_SWAP_THRESHOLD)
-    return SWAP_THRESHOLD
+        threshold = max(threshold, HARD_MIRRORED_ONE_STOP_SWAP_THRESHOLD)
+    if left_family is not None and right_family is not None:
+        threshold = max(
+            threshold,
+            FAMILY_SPECIFIC_SWAP_THRESHOLDS.get(
+                (left_family, right_family),
+                threshold,
+            ),
+        )
+    return threshold
 
 
 def build_pair_features(

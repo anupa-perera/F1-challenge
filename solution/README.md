@@ -10,8 +10,8 @@ The live submission model is a hybrid of:
 
 The current validated baseline is:
 
-- held-out historical exact: `1811/6000`
-- held-out historical pairwise: `98.2135%`
+- held-out historical exact: `1813/6000`
+- held-out historical pairwise: `98.2139%`
 - local 100-case suite: `28/100`
 
 These numbers come from the real submission path:
@@ -58,6 +58,7 @@ Recent validated runtime progression:
 - mirrored one-stop gate widening: `1720/6000`
 - hard-mirror confidence increase: `1803/6000`
 - blocked one-stop threshold-table widening: `1811/6000`
+- blocked one-stop confidence-table widening: `1813/6000`
 
 The main lesson from this progression is:
 
@@ -172,7 +173,8 @@ The solver is organized so each file answers one question:
     those cases still needed more aggressive reranking even after the wider
     gate was enabled
   - a tiny family threshold table handles the few remaining ordered one-stop
-    pairings that were still strongly blocked even after the mirrored rule
+    pairings that were still strongly blocked or slightly under-swapped even
+    after the mirrored rule
   - it swaps them only when the model is confident enough
   - the current exported model is trained on both adjacent and second-neighbor
     examples (`max_rank_gap=2`), but runtime still only performs adjacent swaps
@@ -403,7 +405,8 @@ Because of that, the most likely next improvement directions are:
    - hard-led mirrored one-stop pairs also get a higher swap threshold because
      the reranker still tended to stay too conservative on those families
    - the last few highest-value blocked ordered one-stop pairs get a small
-     threshold-table override instead of another new model layer
+     threshold-table override for cost-gap and swap confidence instead of
+     another new model layer
    - it swaps them only when the classifier is confident enough
    This keeps the learned layer in the role of a tie-breaker instead of
    replacing the whole scoring model.

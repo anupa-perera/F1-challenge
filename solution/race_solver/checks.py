@@ -433,3 +433,10 @@ def run_self_checks() -> None:
         "SOFT->MEDIUM / 1 stop",
         "MEDIUM->SOFT / 1 stop",
     )
+    assert rerank_swap_threshold(
+        "SOFT->HARD / 1 stop",
+        "MEDIUM->HARD / 1 stop",
+    ) > rerank_swap_threshold(
+        "SOFT->MEDIUM / 1 stop",
+        "MEDIUM->SOFT / 1 stop",
+    )
