@@ -122,6 +122,21 @@ def is_post_stop_stint(*, start_lap: int) -> bool:
     return start_lap > 1
 
 
+def is_medium_one_stop_opening_stint(
+    config: RaceConfig,
+    driver_plan: DriverPlan,
+    stint: Stint,
+) -> bool:
+    """Return whether a one-stop medium opener should pay the commitment cost."""
+
+    return (
+        stint.start_lap == 1
+        and stint.compound == "MEDIUM"
+        and driver_plan.stop_count == 1
+        and 37 <= config.total_laps <= 52
+    )
+
+
 def restart_opening_profile(compound: str) -> tuple[float, ...]:
     """Return the fixed restart opening shape for each compound.
 
@@ -308,6 +323,11 @@ def driver_score_breakdown(
     base_race_time = config.base_lap_time * config.total_laps
     pit_stop_time = config.pit_lane_time * driver_plan.stop_count
     additional_stop_time = extra_stop_time(driver_plan, resolved_model)
+    opening_commitment_time = medium_one_stop_opening_time(
+        config,
+        driver_plan,
+        resolved_model,
+    )
     stints = tuple(
         stint_score_breakdown(stint=stint, config=config, model=resolved_model)
         for stint in driver_plan.stints
@@ -319,11 +339,13 @@ def driver_score_breakdown(
         base_race_time=base_race_time,
         pit_stop_time=pit_stop_time,
         additional_stop_time=additional_stop_time,
+        opening_commitment_time=opening_commitment_time,
         tire_penalty_time=tire_penalty_time,
         total_time=(
             base_race_time
             + pit_stop_time
             + additional_stop_time
+            + opening_commitment_time
             + tire_penalty_time
         ),
         stints=stints,
@@ -346,11 +368,22 @@ def driver_total_time(
     base_race_time = config.base_lap_time * config.total_laps
     pit_stop_time = config.pit_lane_time * driver_plan.stop_count
     additional_stop_time = extra_stop_time(driver_plan, resolved_model)
+    opening_commitment_time = medium_one_stop_opening_time(
+        config,
+        driver_plan,
+        resolved_model,
+    )
     tire_penalty_time = sum(
         stint_penalty_total(stint=stint, config=config, model=resolved_model)
         for stint in driver_plan.stints
     )
-    return base_race_time + pit_stop_time + additional_stop_time + tire_penalty_time
+    return (
+        base_race_time
+        + pit_stop_time
+        + additional_stop_time
+        + opening_commitment_time
+        + tire_penalty_time
+    )
 
 
 def extra_stop_time(
@@ -366,6 +399,33 @@ def extra_stop_time(
     """
 
     return model.additional_stop_penalty * max(0, driver_plan.stop_count - 1)
+
+
+def medium_one_stop_opening_time(
+    config: RaceConfig,
+    driver_plan: DriverPlan,
+    model: ModelParameters,
+) -> float:
+    """Return the extra commitment cost for medium-start one-stop strategies.
+
+    Held-out data still shows medium-length one-stop MEDIUM openers pricing a
+    little too optimistically relative to mirrored alternatives. This term is a
+    narrow structural correction: it only applies to the opening MEDIUM stint
+    of a one-stop plan in medium-length races.
+    """
+
+    first_stint = driver_plan.stints[0]
+    if not is_medium_one_stop_opening_stint(config, driver_plan, first_stint):
+        return 0.0
+
+    params = model.compounds[first_stint.compound]
+    pace_multiplier, _ = compound_multipliers(config, model, first_stint.compound)
+    return (
+        params.pace_offset
+        * pace_multiplier
+        * model.medium_one_stop_opening_bias_scale
+        * stint_opening_bias_units(first_stint.compound, first_stint.length)
+    )
 
 
 def predict_finishing_order(

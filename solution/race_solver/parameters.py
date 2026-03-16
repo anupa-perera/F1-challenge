@@ -596,6 +596,7 @@ def replace_parameter(
         lap_progress_pace_scale=model.lap_progress_pace_scale,
         post_stop_opening_bias_scale=model.post_stop_opening_bias_scale,
         additional_stop_penalty=model.additional_stop_penalty,
+        medium_one_stop_opening_bias_scale=model.medium_one_stop_opening_bias_scale,
     )
 
 
@@ -634,6 +635,7 @@ def model_to_dict(model: ModelParameters) -> dict[str, dict[str, float | int]]:
             "lap_progress_pace_scale": model.lap_progress_pace_scale,
             "post_stop_opening_bias_scale": model.post_stop_opening_bias_scale,
             "additional_stop_penalty": model.additional_stop_penalty,
+            "medium_one_stop_opening_bias_scale": model.medium_one_stop_opening_bias_scale,
         },
         "compounds": {
             compound: {

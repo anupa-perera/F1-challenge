@@ -50,6 +50,7 @@ PARAMETER_BOUNDS = {
     "lap_progress_pace_scale": {None: (-0.75, 0.75)},
     "post_stop_opening_bias_scale": {None: (-0.5, 0.5)},
     "additional_stop_penalty": {None: (0.0, 4.0)},
+    "medium_one_stop_opening_bias_scale": {None: (-0.5, 0.5)},
 }
 COARSE_STEPS = {
     "pace_offset": 0.1,
@@ -61,6 +62,7 @@ COARSE_STEPS = {
     "lap_progress_pace_scale": 0.05,
     "post_stop_opening_bias_scale": 0.05,
     "additional_stop_penalty": 0.1,
+    "medium_one_stop_opening_bias_scale": 0.05,
 }
 REFINE_STEPS = {
     "pace_offset": 0.05,
@@ -72,6 +74,7 @@ REFINE_STEPS = {
     "lap_progress_pace_scale": 0.025,
     "post_stop_opening_bias_scale": 0.025,
     "additional_stop_penalty": 0.05,
+    "medium_one_stop_opening_bias_scale": 0.025,
 }
 @dataclass(frozen=True)
 class SearchResult:
@@ -169,6 +172,7 @@ def model_signature(model: ModelParameters) -> tuple[float | int, ...]:
         round(model.lap_progress_pace_scale, 6),
         round(model.post_stop_opening_bias_scale, 6),
         round(model.additional_stop_penalty, 6),
+        round(model.medium_one_stop_opening_bias_scale, 6),
     ]
     for compound in COMPOUND_ORDER:
         params = model.compounds[compound]
@@ -310,6 +314,7 @@ def search_sequence() -> list[tuple[str | None, str]]:
         "lap_progress_pace_scale",
         "post_stop_opening_bias_scale",
         "additional_stop_penalty",
+        "medium_one_stop_opening_bias_scale",
         "pace_offset",
         "grace_laps",
         "deg_rate",
@@ -323,6 +328,7 @@ def search_sequence() -> list[tuple[str | None, str]]:
             "lap_progress_pace_scale",
             "post_stop_opening_bias_scale",
             "additional_stop_penalty",
+            "medium_one_stop_opening_bias_scale",
         }:
             sequence.append((None, field_name))
             continue

@@ -82,6 +82,11 @@ The solver is organized so each file answers one question:
   much net credit to many two-stop strategies even after explicit pit-lane time
   was included, so the live model treats the second stop as slightly more
   costly than a pure tire reset.
+- The scorer also adds a small opening commitment cost for one-stop MEDIUM
+  starters in medium-length races. Held-out crossover errors showed those
+  plans were still a bit too optimistic against mirrored alternatives, so the
+  live model prices that opening commitment explicitly instead of trying to
+  force the effect through a generic lap-progress term.
 - Runtime now uses a learned, pruned deterministic gate tree over the existing
   expert model catalog instead of a hand-grown bucket list. The frozen runtime
   tree is intentionally small:

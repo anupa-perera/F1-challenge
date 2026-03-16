@@ -113,6 +113,45 @@ def run_self_checks() -> None:
     assert driver_total_time(config, two_stop_plan, model=extra_stop_model) > (
         driver_total_time(config, one_stop_plan, model=extra_stop_model)
     )
+    medium_opening_model = replace_parameter(
+        DEFAULT_MODEL_PARAMETERS,
+        None,
+        "medium_one_stop_opening_bias_scale",
+        0.15,
+    )
+    medium_race = RaceConfig(
+        track="Medium",
+        total_laps=45,
+        base_lap_time=87.5,
+        pit_lane_time=21.0,
+        track_temp=30,
+    )
+    medium_one_stop_plan = build_driver_plan(
+        total_laps=45,
+        strategy={
+            "driver_id": "D012",
+            "starting_tire": "MEDIUM",
+            "pit_stops": [{"lap": 20, "from_tire": "MEDIUM", "to_tire": "HARD"}],
+        },
+    )
+    hard_one_stop_plan = build_driver_plan(
+        total_laps=45,
+        strategy={
+            "driver_id": "D013",
+            "starting_tire": "HARD",
+            "pit_stops": [{"lap": 25, "from_tire": "HARD", "to_tire": "MEDIUM"}],
+        },
+    )
+    assert driver_score_breakdown(
+        medium_race,
+        medium_one_stop_plan,
+        model=medium_opening_model,
+    ).opening_commitment_time > 0.0
+    assert driver_score_breakdown(
+        medium_race,
+        hard_one_stop_plan,
+        model=medium_opening_model,
+    ).opening_commitment_time == 0.0
     restart_bias_model = replace_parameter(
         DEFAULT_MODEL_PARAMETERS,
         None,
