@@ -652,7 +652,7 @@ LONG_NON_MEDIUM_MODEL_PARAMETERS = ModelParameters(
         ),
     },
     lap_progress_pace_scale=0.0,
-    post_stop_opening_bias_scale=0.3,
+    post_stop_opening_bias_scale=0.2,
     additional_stop_penalty=4.6,
     hard_loop_extreme_temp_penalty=2.0,
     one_stop_arcs=OneStopArcAdjustments(
