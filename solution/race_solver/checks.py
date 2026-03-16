@@ -158,6 +158,44 @@ def run_self_checks() -> None:
         hard_non_loop_plan,
         model=hard_loop_model,
     ).hard_loop_penalty_time == 0.0
+    loop_arc_model = replace_parameter(
+        DEFAULT_MODEL_PARAMETERS,
+        None,
+        "two_stop_loop_hard_to_medium_to_hard",
+        0.6,
+    )
+    soft_loop_model = replace_parameter(
+        DEFAULT_MODEL_PARAMETERS,
+        None,
+        "two_stop_loop_soft_to_medium_to_soft",
+        -0.2,
+    )
+    soft_outer_loop_plan = build_driver_plan(
+        total_laps=58,
+        strategy={
+            "driver_id": "D020",
+            "starting_tire": "SOFT",
+            "pit_stops": [
+                {"lap": 14, "from_tire": "SOFT", "to_tire": "MEDIUM"},
+                {"lap": 36, "from_tire": "MEDIUM", "to_tire": "SOFT"},
+            ],
+        },
+    )
+    assert driver_score_breakdown(
+        hard_loop_hot_race,
+        hard_loop_plan,
+        model=loop_arc_model,
+    ).two_stop_loop_time == 0.6
+    assert driver_score_breakdown(
+        hard_loop_hot_race,
+        hard_non_loop_plan,
+        model=loop_arc_model,
+    ).two_stop_loop_time == 0.0
+    assert driver_score_breakdown(
+        hard_loop_hot_race,
+        soft_outer_loop_plan,
+        model=soft_loop_model,
+    ).two_stop_loop_time == -0.2
     hard_to_soft_arc_model = replace_parameter(
         DEFAULT_MODEL_PARAMETERS,
         None,

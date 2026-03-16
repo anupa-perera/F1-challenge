@@ -108,6 +108,16 @@ The solver is organized so each file answers one question:
   - the current `short_cool_mild`, `medium_high_pit`,
     `medium_high_pit_hot`, and `medium_high_pit_cool` leaves are the ones
     that earned materially different arc profiles on held-out history
+- The scorer now also treats symmetric two-stop loops (`A->B->A`) as an
+  explicit structural term. That keeps the biggest remaining durable two-stop
+  misses in one compact seam instead of stretching the generic stop penalty:
+  - each loop family (`SOFT->MEDIUM->SOFT`, `SOFT->HARD->SOFT`,
+    `MEDIUM->SOFT->MEDIUM`, `MEDIUM->HARD->MEDIUM`,
+    `HARD->SOFT->HARD`, `HARD->MEDIUM->HARD`) can carry a small fitted
+    adjustment
+  - the current `long_non_medium`, `medium_high_pit_hot`, and
+    `medium_high_pit_cool` leaves are the ones that earned materially
+    different loop profiles on held-out history
 - The scorer also adds a small opening commitment cost for one-stop MEDIUM
   starters in medium-length races. Held-out crossover errors showed those
   plans were still a bit too optimistic against mirrored alternatives, so the

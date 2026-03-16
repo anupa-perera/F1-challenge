@@ -66,6 +66,16 @@ class OneStopArcAdjustments:
 
 
 @dataclass(frozen=True)
+class TwoStopLoopAdjustments:
+    soft_to_medium_to_soft: float = 0.0
+    soft_to_hard_to_soft: float = 0.0
+    medium_to_soft_to_medium: float = 0.0
+    medium_to_hard_to_medium: float = 0.0
+    hard_to_soft_to_hard: float = 0.0
+    hard_to_medium_to_hard: float = 0.0
+
+
+@dataclass(frozen=True)
 class ModelParameters:
     compounds: Mapping[str, CompoundParameters]
     lap_progress_pace_scale: float
@@ -75,6 +85,9 @@ class ModelParameters:
     hard_loop_extreme_temp_penalty: float = 1.15
     one_stop_arcs: OneStopArcAdjustments = field(
         default_factory=OneStopArcAdjustments
+    )
+    two_stop_loops: TwoStopLoopAdjustments = field(
+        default_factory=TwoStopLoopAdjustments
     )
 
 
@@ -118,6 +131,7 @@ class DriverScoreBreakdown:
     additional_stop_time: float
     hard_loop_penalty_time: float
     one_stop_arc_time: float
+    two_stop_loop_time: float
     opening_commitment_time: float
     tire_penalty_time: float
     total_time: float

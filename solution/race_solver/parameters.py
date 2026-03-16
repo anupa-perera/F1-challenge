@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from dataclasses import replace
 
-from .models import CompoundParameters, ModelParameters, OneStopArcAdjustments
+from .models import (
+    CompoundParameters,
+    ModelParameters,
+    OneStopArcAdjustments,
+    TwoStopLoopAdjustments,
+)
 
 
 DEFAULT_ONE_STOP_ARCS = OneStopArcAdjustments(
@@ -23,6 +28,8 @@ LONG_ONE_STOP_ARCS = OneStopArcAdjustments(
     hard_to_medium=0.01,
     medium_to_hard=-0.04,
 )
+
+DEFAULT_TWO_STOP_LOOPS = TwoStopLoopAdjustments()
 
 
 # This is the strongest validated single-model baseline so far. Calibration
@@ -58,6 +65,7 @@ DEFAULT_MODEL_PARAMETERS = ModelParameters(
     lap_progress_pace_scale=0.0,
     post_stop_opening_bias_scale=0.0,
     one_stop_arcs=DEFAULT_ONE_STOP_ARCS,
+    two_stop_loops=DEFAULT_TWO_STOP_LOOPS,
 )
 
 
@@ -91,6 +99,7 @@ MEDIUM_COOL_SLOW_MODEL_PARAMETERS = ModelParameters(
     lap_progress_pace_scale=0.0,
     post_stop_opening_bias_scale=0.175,
     one_stop_arcs=DEFAULT_ONE_STOP_ARCS,
+    two_stop_loops=DEFAULT_TWO_STOP_LOOPS,
 )
 
 
@@ -125,6 +134,7 @@ MEDIUM_COOL_SLOW_COOL_MODEL_PARAMETERS = ModelParameters(
     post_stop_opening_bias_scale=0.45,
     additional_stop_penalty=3.8,
     one_stop_arcs=DEFAULT_ONE_STOP_ARCS,
+    two_stop_loops=DEFAULT_TWO_STOP_LOOPS,
 )
 
 
@@ -158,6 +168,7 @@ MEDIUM_COOL_FAST_MID_MODEL_PARAMETERS = ModelParameters(
     lap_progress_pace_scale=0.0,
     post_stop_opening_bias_scale=0.2,
     one_stop_arcs=DEFAULT_ONE_STOP_ARCS,
+    two_stop_loops=DEFAULT_TWO_STOP_LOOPS,
 )
 
 
@@ -196,42 +207,55 @@ MEDIUM_HIGH_PIT_MODEL_PARAMETERS = ModelParameters(
         hard_to_soft=0.08,
         hard_to_medium=0.08,
     ),
+    two_stop_loops=DEFAULT_TWO_STOP_LOOPS,
 )
 
 
 MEDIUM_HIGH_PIT_COOL_MODEL_PARAMETERS = ModelParameters(
     compounds={
         "SOFT": CompoundParameters(
-            pace_offset=-1.25,
+            pace_offset=-1.4,
             grace_laps=5,
             deg_rate=0.1,
             temp_pace_scale=0.2,
             temp_deg_scale=0.2,
-            race_length_deg_scale=0.025,
+            race_length_deg_scale=0.05,
         ),
         "MEDIUM": CompoundParameters(
             pace_offset=0.6,
             grace_laps=16,
             deg_rate=0.05,
-            temp_pace_scale=-0.05,
+            temp_pace_scale=-0.0,
             temp_deg_scale=0.2,
-            race_length_deg_scale=-0.025,
+            race_length_deg_scale=-0.0,
         ),
         "HARD": CompoundParameters(
             pace_offset=1.6,
             grace_laps=26,
             deg_rate=0.025,
             temp_pace_scale=0.075,
-            temp_deg_scale=0.125,
+            temp_deg_scale=0.1,
             race_length_deg_scale=-0.1,
         ),
     },
     lap_progress_pace_scale=0.0,
-    post_stop_opening_bias_scale=-0.025,
+    post_stop_opening_bias_scale=-0.0,
+    additional_stop_penalty=2.65,
+    medium_one_stop_opening_bias_scale=0.025,
+    hard_loop_extreme_temp_penalty=0.15,
     one_stop_arcs=OneStopArcAdjustments(
-        medium_to_hard=0.04,
-        hard_to_soft=0.04,
+        soft_to_medium=-0.12,
+        soft_to_hard=0.13,
+        medium_to_soft=-0.08,
+        medium_to_hard=0.02,
+        hard_to_soft=0.12,
         hard_to_medium=0.04,
+    ),
+    two_stop_loops=TwoStopLoopAdjustments(
+        soft_to_medium_to_soft=-0.25,
+        soft_to_hard_to_soft=0.7,
+        medium_to_soft_to_medium=-0.45,
+        medium_to_hard_to_medium=-0.25,
     ),
 )
 
@@ -264,11 +288,25 @@ MEDIUM_HIGH_PIT_HOT_MODEL_PARAMETERS = ModelParameters(
         ),
     },
     lap_progress_pace_scale=0.0,
-    post_stop_opening_bias_scale=0.05,
+    post_stop_opening_bias_scale=-0.0,
+    additional_stop_penalty=0.5,
+    medium_one_stop_opening_bias_scale=0.35,
+    hard_loop_extreme_temp_penalty=2.0,
     one_stop_arcs=OneStopArcAdjustments(
+        soft_to_medium=0.02,
+        soft_to_hard=0.12,
+        medium_to_soft=0.14,
+        medium_to_hard=0.08,
         hard_to_soft=0.12,
-        hard_to_medium=0.035,
-        medium_to_hard=-0.04,
+        hard_to_medium=-0.2,
+    ),
+    two_stop_loops=TwoStopLoopAdjustments(
+        soft_to_medium_to_soft=-0.6,
+        soft_to_hard_to_soft=0.6,
+        medium_to_soft_to_medium=-0.9,
+        medium_to_hard_to_medium=0.0,
+        hard_to_soft_to_hard=0.6,
+        hard_to_medium_to_hard=0.1,
     ),
 )
 
@@ -303,6 +341,7 @@ MEDIUM_HIGH_PIT_HOT_FAST_SLOW_MODEL_PARAMETERS = ModelParameters(
     lap_progress_pace_scale=0.0,
     post_stop_opening_bias_scale=0.2,
     one_stop_arcs=DEFAULT_ONE_STOP_ARCS,
+    two_stop_loops=DEFAULT_TWO_STOP_LOOPS,
 )
 
 
@@ -336,6 +375,7 @@ MEDIUM_HIGH_PIT_HOT_FAST_SLOW_HOT_MODEL_PARAMETERS = ModelParameters(
     lap_progress_pace_scale=0.0,
     post_stop_opening_bias_scale=0.1,
     one_stop_arcs=DEFAULT_ONE_STOP_ARCS,
+    two_stop_loops=DEFAULT_TWO_STOP_LOOPS,
 )
 
 
@@ -369,6 +409,7 @@ MEDIUM_OTHER_MODEL_PARAMETERS = ModelParameters(
     lap_progress_pace_scale=-0.125,
     post_stop_opening_bias_scale=0.025,
     one_stop_arcs=DEFAULT_ONE_STOP_ARCS,
+    two_stop_loops=DEFAULT_TWO_STOP_LOOPS,
 )
 
 
@@ -402,6 +443,7 @@ MEDIUM_OTHER_HOT_FAST_MID_MODEL_PARAMETERS = ModelParameters(
     lap_progress_pace_scale=0.0,
     post_stop_opening_bias_scale=0.1,
     one_stop_arcs=DEFAULT_ONE_STOP_ARCS,
+    two_stop_loops=DEFAULT_TWO_STOP_LOOPS,
 )
 
 
@@ -435,6 +477,7 @@ MEDIUM_OTHER_HOT_FAST_MID_FAST_MODEL_PARAMETERS = ModelParameters(
     lap_progress_pace_scale=0.0,
     post_stop_opening_bias_scale=0.1,
     one_stop_arcs=DEFAULT_ONE_STOP_ARCS,
+    two_stop_loops=DEFAULT_TWO_STOP_LOOPS,
 )
 
 
@@ -468,6 +511,7 @@ MEDIUM_OTHER_HOT_MODEL_PARAMETERS = ModelParameters(
     lap_progress_pace_scale=0.0,
     post_stop_opening_bias_scale=0.2,
     one_stop_arcs=DEFAULT_ONE_STOP_ARCS,
+    two_stop_loops=DEFAULT_TWO_STOP_LOOPS,
 )
 
 
@@ -501,6 +545,7 @@ SHORT_NON_MEDIUM_MODEL_PARAMETERS = ModelParameters(
     lap_progress_pace_scale=0.0,
     post_stop_opening_bias_scale=0.0,
     one_stop_arcs=SHORT_ONE_STOP_ARCS,
+    two_stop_loops=DEFAULT_TWO_STOP_LOOPS,
 )
 
 
@@ -541,6 +586,7 @@ SHORT_COOL_MILD_MODEL_PARAMETERS = ModelParameters(
         hard_to_soft=0.02,
         hard_to_medium=0.16,
     ),
+    two_stop_loops=DEFAULT_TWO_STOP_LOOPS,
 )
 
 
@@ -574,15 +620,16 @@ SHORT_WARM_MODEL_PARAMETERS = ModelParameters(
     lap_progress_pace_scale=0.0,
     post_stop_opening_bias_scale=0.05,
     one_stop_arcs=SHORT_ONE_STOP_ARCS,
+    two_stop_loops=DEFAULT_TWO_STOP_LOOPS,
 )
 
 LONG_NON_MEDIUM_MODEL_PARAMETERS = ModelParameters(
     compounds={
         "SOFT": CompoundParameters(
-            pace_offset=-2.5,
+            pace_offset=-2.6,
             grace_laps=4,
             deg_rate=0.11,
-            temp_pace_scale=-0.1,
+            temp_pace_scale=-0.05,
             temp_deg_scale=0.075,
             race_length_deg_scale=0.2,
         ),
@@ -604,10 +651,23 @@ LONG_NON_MEDIUM_MODEL_PARAMETERS = ModelParameters(
         ),
     },
     lap_progress_pace_scale=0.0,
-    post_stop_opening_bias_scale=0.0,
-    additional_stop_penalty=3.9,
+    post_stop_opening_bias_scale=0.3,
+    additional_stop_penalty=4.0,
     hard_loop_extreme_temp_penalty=2.0,
-    one_stop_arcs=LONG_ONE_STOP_ARCS,
+    one_stop_arcs=OneStopArcAdjustments(
+        soft_to_hard=0.06,
+        medium_to_hard=-0.2,
+        hard_to_soft=-0.08,
+        hard_to_medium=0.19,
+    ),
+    two_stop_loops=TwoStopLoopAdjustments(
+        soft_to_medium_to_soft=-1.0,
+        soft_to_hard_to_soft=-0.5,
+        medium_to_soft_to_medium=-0.5,
+        medium_to_hard_to_medium=1.0,
+        hard_to_soft_to_hard=0.8,
+        hard_to_medium_to_hard=0.8,
+    ),
 )
 
 
@@ -646,6 +706,12 @@ def replace_parameter(
                 model,
                 one_stop_arcs=replace(model.one_stop_arcs, **{arc_field_name: value}),
             )
+        if field_name.startswith("two_stop_loop_"):
+            loop_field_name = field_name.removeprefix("two_stop_loop_")
+            return replace(
+                model,
+                two_stop_loops=replace(model.two_stop_loops, **{loop_field_name: value}),
+            )
         return replace(model, **{field_name: value})
 
     replacement = replace(model.compounds[compound], **{field_name: value})
@@ -660,6 +726,7 @@ def replace_parameter(
         medium_one_stop_opening_bias_scale=model.medium_one_stop_opening_bias_scale,
         hard_loop_extreme_temp_penalty=model.hard_loop_extreme_temp_penalty,
         one_stop_arcs=model.one_stop_arcs,
+        two_stop_loops=model.two_stop_loops,
     )
 
 
@@ -706,6 +773,12 @@ def model_to_dict(model: ModelParameters) -> dict[str, dict[str, float | int]]:
             "one_stop_arc_medium_to_hard": model.one_stop_arcs.medium_to_hard,
             "one_stop_arc_hard_to_soft": model.one_stop_arcs.hard_to_soft,
             "one_stop_arc_hard_to_medium": model.one_stop_arcs.hard_to_medium,
+            "two_stop_loop_soft_to_medium_to_soft": model.two_stop_loops.soft_to_medium_to_soft,
+            "two_stop_loop_soft_to_hard_to_soft": model.two_stop_loops.soft_to_hard_to_soft,
+            "two_stop_loop_medium_to_soft_to_medium": model.two_stop_loops.medium_to_soft_to_medium,
+            "two_stop_loop_medium_to_hard_to_medium": model.two_stop_loops.medium_to_hard_to_medium,
+            "two_stop_loop_hard_to_soft_to_hard": model.two_stop_loops.hard_to_soft_to_hard,
+            "two_stop_loop_hard_to_medium_to_hard": model.two_stop_loops.hard_to_medium_to_hard,
         },
         "compounds": {
             compound: {

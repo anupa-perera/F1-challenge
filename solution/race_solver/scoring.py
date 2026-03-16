@@ -190,6 +190,46 @@ def one_stop_arc_adjustment_time(
     return arc_value_by_key.get(arc_key, 0.0)
 
 
+def two_stop_loop_key(driver_plan: DriverPlan) -> str | None:
+    """Return the loop signature for symmetric two-stop plans, if present.
+
+    The next unresolved structural miss is that several `A->B->A` plans are
+    still priced systematically too high or too low depending on context. We
+    model that family explicitly so calibration can adjust loop quality without
+    distorting every two-stop strategy.
+    """
+
+    if driver_plan.stop_count != 2 or len(driver_plan.stints) != 3:
+        return None
+    first_compound = driver_plan.stints[0].compound
+    middle_compound = driver_plan.stints[1].compound
+    last_compound = driver_plan.stints[2].compound
+    if first_compound != last_compound or first_compound == middle_compound:
+        return None
+    return f"{first_compound}->{middle_compound}->{last_compound}"
+
+
+def two_stop_loop_adjustment_time(
+    driver_plan: DriverPlan,
+    model: ModelParameters,
+) -> float:
+    """Return the explicit adjustment for symmetric two-stop loop plans."""
+
+    loop_key = two_stop_loop_key(driver_plan)
+    if loop_key is None:
+        return 0.0
+
+    loop_value_by_key = {
+        "SOFT->MEDIUM->SOFT": model.two_stop_loops.soft_to_medium_to_soft,
+        "SOFT->HARD->SOFT": model.two_stop_loops.soft_to_hard_to_soft,
+        "MEDIUM->SOFT->MEDIUM": model.two_stop_loops.medium_to_soft_to_medium,
+        "MEDIUM->HARD->MEDIUM": model.two_stop_loops.medium_to_hard_to_medium,
+        "HARD->SOFT->HARD": model.two_stop_loops.hard_to_soft_to_hard,
+        "HARD->MEDIUM->HARD": model.two_stop_loops.hard_to_medium_to_hard,
+    }
+    return loop_value_by_key.get(loop_key, 0.0)
+
+
 def restart_opening_profile(compound: str) -> tuple[float, ...]:
     """Return the fixed restart opening shape for each compound.
 
@@ -382,6 +422,7 @@ def driver_score_breakdown(
         resolved_model,
     )
     one_stop_arc_time = one_stop_arc_adjustment_time(driver_plan, resolved_model)
+    two_stop_loop_time = two_stop_loop_adjustment_time(driver_plan, resolved_model)
     opening_commitment_time = medium_one_stop_opening_time(
         config,
         driver_plan,
@@ -400,6 +441,7 @@ def driver_score_breakdown(
         additional_stop_time=additional_stop_time,
         hard_loop_penalty_time=hard_loop_penalty_time,
         one_stop_arc_time=one_stop_arc_time,
+        two_stop_loop_time=two_stop_loop_time,
         opening_commitment_time=opening_commitment_time,
         tire_penalty_time=tire_penalty_time,
         total_time=(
@@ -408,6 +450,7 @@ def driver_score_breakdown(
             + additional_stop_time
             + hard_loop_penalty_time
             + one_stop_arc_time
+            + two_stop_loop_time
             + opening_commitment_time
             + tire_penalty_time
         ),
@@ -437,6 +480,7 @@ def driver_total_time(
         resolved_model,
     )
     one_stop_arc_time = one_stop_arc_adjustment_time(driver_plan, resolved_model)
+    two_stop_loop_time = two_stop_loop_adjustment_time(driver_plan, resolved_model)
     opening_commitment_time = medium_one_stop_opening_time(
         config,
         driver_plan,
@@ -452,6 +496,7 @@ def driver_total_time(
         + additional_stop_time
         + hard_loop_penalty_time
         + one_stop_arc_time
+        + two_stop_loop_time
         + opening_commitment_time
         + tire_penalty_time
     )

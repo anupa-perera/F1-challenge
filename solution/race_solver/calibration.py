@@ -58,6 +58,12 @@ PARAMETER_BOUNDS = {
     "one_stop_arc_medium_to_hard": {None: (-0.2, 0.2)},
     "one_stop_arc_hard_to_soft": {None: (-0.2, 0.2)},
     "one_stop_arc_hard_to_medium": {None: (-0.2, 0.2)},
+    "two_stop_loop_soft_to_medium_to_soft": {None: (-1.0, 1.0)},
+    "two_stop_loop_soft_to_hard_to_soft": {None: (-1.0, 1.0)},
+    "two_stop_loop_medium_to_soft_to_medium": {None: (-1.0, 1.0)},
+    "two_stop_loop_medium_to_hard_to_medium": {None: (-1.0, 1.0)},
+    "two_stop_loop_hard_to_soft_to_hard": {None: (-1.0, 1.0)},
+    "two_stop_loop_hard_to_medium_to_hard": {None: (-1.0, 1.0)},
 }
 COARSE_STEPS = {
     "pace_offset": 0.1,
@@ -77,6 +83,12 @@ COARSE_STEPS = {
     "one_stop_arc_medium_to_hard": 0.02,
     "one_stop_arc_hard_to_soft": 0.02,
     "one_stop_arc_hard_to_medium": 0.02,
+    "two_stop_loop_soft_to_medium_to_soft": 0.1,
+    "two_stop_loop_soft_to_hard_to_soft": 0.1,
+    "two_stop_loop_medium_to_soft_to_medium": 0.1,
+    "two_stop_loop_medium_to_hard_to_medium": 0.1,
+    "two_stop_loop_hard_to_soft_to_hard": 0.1,
+    "two_stop_loop_hard_to_medium_to_hard": 0.1,
 }
 REFINE_STEPS = {
     "pace_offset": 0.05,
@@ -96,6 +108,12 @@ REFINE_STEPS = {
     "one_stop_arc_medium_to_hard": 0.01,
     "one_stop_arc_hard_to_soft": 0.01,
     "one_stop_arc_hard_to_medium": 0.01,
+    "two_stop_loop_soft_to_medium_to_soft": 0.05,
+    "two_stop_loop_soft_to_hard_to_soft": 0.05,
+    "two_stop_loop_medium_to_soft_to_medium": 0.05,
+    "two_stop_loop_medium_to_hard_to_medium": 0.05,
+    "two_stop_loop_hard_to_soft_to_hard": 0.05,
+    "two_stop_loop_hard_to_medium_to_hard": 0.05,
 }
 @dataclass(frozen=True)
 class SearchResult:
@@ -201,6 +219,12 @@ def model_signature(model: ModelParameters) -> tuple[float | int, ...]:
         round(model.one_stop_arcs.medium_to_hard, 6),
         round(model.one_stop_arcs.hard_to_soft, 6),
         round(model.one_stop_arcs.hard_to_medium, 6),
+        round(model.two_stop_loops.soft_to_medium_to_soft, 6),
+        round(model.two_stop_loops.soft_to_hard_to_soft, 6),
+        round(model.two_stop_loops.medium_to_soft_to_medium, 6),
+        round(model.two_stop_loops.medium_to_hard_to_medium, 6),
+        round(model.two_stop_loops.hard_to_soft_to_hard, 6),
+        round(model.two_stop_loops.hard_to_medium_to_hard, 6),
     ]
     for compound in COMPOUND_ORDER:
         params = model.compounds[compound]
@@ -350,6 +374,12 @@ def search_sequence() -> list[tuple[str | None, str]]:
         "one_stop_arc_medium_to_hard",
         "one_stop_arc_hard_to_soft",
         "one_stop_arc_hard_to_medium",
+        "two_stop_loop_soft_to_medium_to_soft",
+        "two_stop_loop_soft_to_hard_to_soft",
+        "two_stop_loop_medium_to_soft_to_medium",
+        "two_stop_loop_medium_to_hard_to_medium",
+        "two_stop_loop_hard_to_soft_to_hard",
+        "two_stop_loop_hard_to_medium_to_hard",
         "pace_offset",
         "grace_laps",
         "deg_rate",
@@ -371,6 +401,12 @@ def search_sequence() -> list[tuple[str | None, str]]:
             "one_stop_arc_medium_to_hard",
             "one_stop_arc_hard_to_soft",
             "one_stop_arc_hard_to_medium",
+            "two_stop_loop_soft_to_medium_to_soft",
+            "two_stop_loop_soft_to_hard_to_soft",
+            "two_stop_loop_medium_to_soft_to_medium",
+            "two_stop_loop_medium_to_hard_to_medium",
+            "two_stop_loop_hard_to_soft_to_hard",
+            "two_stop_loop_hard_to_medium_to_hard",
         }:
             sequence.append((None, field_name))
             continue
@@ -440,6 +476,9 @@ def refine_search(
                 if field_name.startswith("one_stop_arc_"):
                     arc_field_name = field_name.removeprefix("one_stop_arc_")
                     current_value = getattr(current_model.one_stop_arcs, arc_field_name)
+                elif field_name.startswith("two_stop_loop_"):
+                    loop_field_name = field_name.removeprefix("two_stop_loop_")
+                    current_value = getattr(current_model.two_stop_loops, loop_field_name)
                 else:
                     current_value = getattr(current_model, field_name)
             else:
