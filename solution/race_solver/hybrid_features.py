@@ -10,7 +10,7 @@ numeric features for any learned layer we test on top.
 from dataclasses import dataclass
 
 from .models import COMPOUND_ORDER, DriverPlan, DriverScoreBreakdown, RaceConfig
-from .runtime_gate import RUNTIME_CONTEXT_ORDER, pit_burden, runtime_context_key
+from .runtime_gate import RUNTIME_CONTEXT_ORDER, pit_burden, runtime_context_key, runtime_model_for_config
 from .scoring import driver_score_breakdown, one_stop_arc_key, two_stop_loop_key
 
 
@@ -89,6 +89,9 @@ FEATURE_NAMES = (
     "loop_medium_to_hard_to_medium",
     "loop_hard_to_soft_to_hard",
     "loop_hard_to_medium_to_hard",
+    "stint_balance_ratio",
+    "pit_lap_normalized",
+    "grace_usage_fraction",
 )
 
 
@@ -161,6 +164,26 @@ def extract_driver_features(
     compounds_used = {stint.compound for stint in driver_plan.stints}
     strategy_cost = resolved_breakdown.total_time - resolved_breakdown.base_race_time
 
+    # Stint balance ratio: how asymmetric are the stints?
+    # For one-stop: first_stint / second_stint. For others: 0.0
+    if len(driver_plan.stints) == 2:
+        second_len = driver_plan.stints[1].length
+        stint_balance_ratio = (driver_plan.stints[0].length / second_len) if second_len > 0 else 0.0
+    else:
+        stint_balance_ratio = 0.0
+
+    # Pit lap normalized: when does the first pit stop happen relative to race length?
+    if driver_plan.stop_count >= 1 and len(driver_plan.stints) >= 2:
+        pit_lap_normalized = driver_plan.stints[0].length / config.total_laps
+    else:
+        pit_lap_normalized = 0.0
+
+    # Grace usage fraction: how much of the dominant compound's grace window is used?
+    resolved_model = runtime_model_for_config(config)
+    longest_stint = max(driver_plan.stints, key=lambda s: s.length)
+    grace = resolved_model.compounds[longest_stint.compound].grace_laps
+    grace_usage_fraction = longest_stint.length / grace if grace > 0 else 0.0
+
     vector = (
         strategy_cost,
         resolved_breakdown.tire_penalty_time,
@@ -201,6 +224,9 @@ def extract_driver_features(
         *(1.0 if context_key == key else 0.0 for key in RUNTIME_CONTEXT_ORDER),
         *(1.0 if one_stop_key == key else 0.0 for key in ONE_STOP_ARC_KEYS),
         *(1.0 if loop_key == key else 0.0 for key in TWO_STOP_LOOP_KEYS),
+        stint_balance_ratio,
+        pit_lap_normalized,
+        grace_usage_fraction,
     )
 
     return DriverHybridFeatures(
