@@ -12,7 +12,7 @@ The current validated baseline is:
 
 - held-out historical exact: `1813/6000`
 - held-out historical pairwise: `98.2139%`
-- local 100-case suite: `28/100`
+- local 100-case suite: `31/100`
 
 These numbers come from the real submission path:
 
@@ -25,8 +25,11 @@ The important mental model is:
 - the scorer still does almost all of the work
 - the reranker only corrects very small local ordering mistakes
 - the reranker is now where most recent gains came from
-- the next big gains will probably need either better reranker features or a
-  scorer-side correction for the remaining medium one-stop hotspot
+- the reranker now uses stint-balance, pit-timing, and grace-usage features
+  that let it act on a wider cost-gap radius (0.12 vs 0.10) with 3 passes
+- scorer-side arc modulation by stint ratio and temperature were tested but
+  calibrated to zero — the next gains likely need new scorer structural terms
+  or a different reranker architecture
 
 ## Progress So Far
 
@@ -59,6 +62,7 @@ Recent validated runtime progression:
 - hard-mirror confidence increase: `1803/6000`
 - blocked one-stop threshold-table widening: `1811/6000`
 - blocked one-stop confidence-table widening: `1813/6000`
+- richer reranker features + wider rerank radius: `31/100` local (+3)
 
 The main lesson from this progression is:
 
