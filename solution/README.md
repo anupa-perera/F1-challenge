@@ -92,6 +92,44 @@ So this is a real architectural improvement, not just a parameter tweak:
 - fewer moving parts
 - much higher measured accuracy
 
+## Final Solution
+
+The final submission logic is intentionally small and direct.
+
+At runtime, the solver does only four things:
+
+1. Parse the input race and build typed driver plans.
+2. Compute one deterministic total race time for each driver.
+3. Resolve exact ties with a narrow validated policy:
+   - usually by starting grid
+   - with one special COTA context where tied `SOFT->HARD` one-stop plans beat
+     tied `MEDIUM->HARD` one-stop plans
+4. Sort all 20 drivers and return the finishing order.
+
+The important architectural choice is that the live runtime no longer depends
+on:
+
+- the old nonlinear wear scorer
+- runtime bucket gating
+- the hybrid close-pair reranker
+- calibration-driven leaf tuning
+
+Those ideas were useful during exploration, but they are not needed in the
+winning submission path.
+
+The source of truth for live prediction is now:
+
+- [simple_physics.py](/f:/sideProjects/F1-Challenge/solution/race_solver/simple_physics.py)
+
+That file contains the actual winning rule set:
+
+- compound pace offsets
+- degradation thresholds
+- linear post-threshold degradation
+- temperature bucket scaling
+- pit-lane time cost
+- deterministic tie resolution
+
 ## Progress So Far
 
 The project went through two major phases.
@@ -124,6 +162,41 @@ The final step to `100/100` was not a new scorer family. It was a narrow
 exact-tie policy for one COTA-style context where the closed-form formula
 produced an exact arithmetic tie between `SOFT->HARD` and `MEDIUM->HARD`
 one-stop plans. Historical validation stayed unchanged, so that rule was kept.
+
+## Lessons Learned
+
+The main lessons from this project are architectural, not just numerical.
+
+1. Start by searching for the right model family.
+   We spent a long time improving a richer model family before proving that the
+   hidden simulator actually needed that complexity. It did not. A simpler
+   family fit much better.
+
+2. Do not confuse realism with correctness.
+   A reverse-engineering challenge is not asking for the most realistic racing
+   model. It is asking for the rule set that best matches the hidden
+   generator.
+
+3. Residuals tell you where the model is wrong, not how complex the truth is.
+   Earlier residual patterns looked like evidence for more mechanisms. In the
+   end, many of them were just symptoms of the wrong base formula.
+
+4. Complexity should be earned.
+   Nonlinear wear, gated experts, one-stop arcs, loop adjustments, and hybrid
+   reranking all sounded reasonable. But the winning runtime needed almost none
+   of them.
+
+5. Keep the system modular enough to replace the core law.
+   Separating parsing, simulation, checks, and evaluation made it possible to
+   swap the live runtime model without rewriting the whole project.
+
+6. Keep failed ideas out of the live path.
+   The repo improved once we treated experiments as disposable unless they
+   clearly earned their place.
+
+7. A simple model with the right assumptions beats a complex model with the
+   wrong assumptions.
+   That is the single most important takeaway from the whole search.
 
 ## Legacy Modules
 
