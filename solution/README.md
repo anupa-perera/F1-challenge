@@ -4,14 +4,14 @@
 
 The live submission model is now a much simpler deterministic solver:
 
-- [race_simulator.py](/f:/sideProjects/F1-Challenge/solution/race_simulator.py)
+- [race_simulator.py](race_simulator.py)
   reads one JSON payload from `stdin` and writes one JSON result to `stdout`
-- [parsing.py](/f:/sideProjects/F1-Challenge/solution/race_solver/parsing.py)
+- [parsing.py](race_solver/parsing.py)
   turns `race_config` and `strategies` into typed domain objects
-- [simple_physics.py](/f:/sideProjects/F1-Challenge/solution/race_solver/simple_physics.py)
+- [simple_physics.py](race_solver/simple_physics.py)
   computes race time directly from tire choice, stint age, temperature bucket,
   pit time, and starting grid
-- [simulation.py](/f:/sideProjects/F1-Challenge/solution/race_solver/simulation.py)
+- [simulation.py](race_solver/simulation.py)
   builds the final output shape expected by the evaluator
 
 Current validated results:
@@ -46,7 +46,7 @@ The runtime is now intentionally small.
    - starting grid position
    - driver ID as final fallback
 
-The live constants in [simple_physics.py](/f:/sideProjects/F1-Challenge/solution/race_solver/simple_physics.py) are:
+The live constants in [simple_physics.py](race_solver/simple_physics.py) are:
 
 - compound offsets:
   - `SOFT = -1.0`
@@ -119,7 +119,7 @@ winning submission path.
 
 The source of truth for live prediction is now:
 
-- [simple_physics.py](/f:/sideProjects/F1-Challenge/solution/race_solver/simple_physics.py)
+- [simple_physics.py](race_solver/simple_physics.py)
 
 That file contains the actual winning rule set:
 
@@ -151,7 +151,7 @@ plateaued around:
 
 ### Phase 2: Simpler physics-aligned runtime
 
-After checking several external solutions, we found one reference model that
+After checking several external solutions, found one reference model that
 was not a lookup trick and that matched held-out data extremely well. Adopting
 that closed-form runtime gave the current jump to:
 
@@ -202,11 +202,11 @@ The main lessons from this project are architectural, not just numerical.
 
 Several modules from the earlier exploration still exist in the repository:
 
-- [scoring.py](/f:/sideProjects/F1-Challenge/solution/race_solver/scoring.py)
-- [pair_reranker.py](/f:/sideProjects/F1-Challenge/solution/race_solver/pair_reranker.py)
-- [hybrid_ranker.py](/f:/sideProjects/F1-Challenge/solution/race_solver/hybrid_ranker.py)
-- [export_hybrid_model.py](/f:/sideProjects/F1-Challenge/solution/export_hybrid_model.py)
-- [calibration.py](/f:/sideProjects/F1-Challenge/solution/race_solver/calibration.py)
+- [scoring.py](race_solver/scoring.py)
+- [pair_reranker.py](race_solver/pair_reranker.py)
+- [hybrid_ranker.py](race_solver/hybrid_ranker.py)
+- [export_hybrid_model.py](export_hybrid_model.py)
+- [calibration.py](race_solver/calibration.py)
 
 They are now legacy research tooling, not the live submission path.
 
@@ -217,7 +217,7 @@ That means:
 
 The runtime source of truth is now:
 
-- [simple_physics.py](/f:/sideProjects/F1-Challenge/solution/race_solver/simple_physics.py)
+- [simple_physics.py](race_solver/simple_physics.py)
 
 ## Current Limitations
 
