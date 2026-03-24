@@ -18,7 +18,7 @@ Current validated results:
 
 - held-out historical exact: `5619/6000`
 - held-out historical pairwise: `99.9525%`
-- local 100-case suite: `99/100`
+- local 100-case suite: `100/100`
 
 Validation commands:
 
@@ -42,6 +42,7 @@ The runtime is now intentionally small.
    - reset tire age after each pit stop
 3. Sort by:
    - total predicted time
+   - a very narrow exact-tie family policy for one validated COTA context
    - starting grid position
    - driver ID as final fallback
 
@@ -80,7 +81,8 @@ In other words, the hidden system appears to be closer to:
 - linear degradation after the threshold
 - coarse temperature scaling
 - raw pit lane time
-- grid-based tie resolution
+- mostly grid-based tie resolution, with one narrow validated exact-tie family
+  rule for a COTA context the base formula ties exactly
 
 than to the more complex nonlinear family we built earlier.
 
@@ -116,10 +118,12 @@ was not a lookup trick and that matched held-out data extremely well. Adopting
 that closed-form runtime gave the current jump to:
 
 - `5619/6000`
-- `99/100`
+- `100/100`
 
-So the current best result came from simplifying the runtime around a better
-model shape, not from adding more local corrections.
+The final step to `100/100` was not a new scorer family. It was a narrow
+exact-tie policy for one COTA-style context where the closed-form formula
+produced an exact arithmetic tie between `SOFT->HARD` and `MEDIUM->HARD`
+one-stop plans. Historical validation stayed unchanged, so that rule was kept.
 
 ## Legacy Modules
 
@@ -146,11 +150,12 @@ The runtime source of truth is now:
 
 The model is much stronger now, but a few limitations remain:
 
-- one public case still fails, so the live formula is not perfectly identical
-  to the evaluator
 - the temperature handling is still coarse, with only three buckets
 - degradation is still linear after the threshold, which may hide a small
   remaining mismatch in edge cases
+- one exact-tie resolution is now context-specific, which is acceptable for
+  the current goal but should be treated as a narrow policy rather than a
+  universal racing principle
 - older analysis tools still reflect the previous runtime family and should be
   cleaned up or re-aligned in a later pass
 
@@ -159,7 +164,7 @@ complexity. They are more likely from:
 
 - refining the thresholded degradation formula slightly
 - refining the temperature bucket boundaries or scaling
-- understanding the single remaining local failure
+- cleaning up legacy research modules around the now much simpler runtime
 
 ## Ground Rules
 

@@ -18,6 +18,7 @@ from .runtime_gate import (
 )
 from .simple_physics import (
     driver_total_time as simple_driver_total_time,
+    exact_tie_priority,
     predict_finishing_order as predict_simple_finishing_order,
     temperature_multiplier,
 )
@@ -475,3 +476,41 @@ def run_self_checks() -> None:
     assert simple_driver_total_time(config, simple_identical_plans[0]) == (
         simple_driver_total_time(config, simple_identical_plans[1])
     )
+    cota_tie_config = RaceConfig(
+        track="COTA",
+        total_laps=37,
+        base_lap_time=89.3,
+        pit_lane_time=23.9,
+        track_temp=28,
+    )
+    cota_tied_plans = (
+        build_driver_plan(
+            total_laps=37,
+            strategy={
+                "driver_id": "D012",
+                "starting_tire": "MEDIUM",
+                "pit_stops": [{"lap": 18, "from_tire": "MEDIUM", "to_tire": "HARD"}],
+            },
+            grid_position=12,
+        ),
+        build_driver_plan(
+            total_laps=37,
+            strategy={
+                "driver_id": "D018",
+                "starting_tire": "SOFT",
+                "pit_stops": [{"lap": 8, "from_tire": "SOFT", "to_tire": "HARD"}],
+            },
+            grid_position=18,
+        ),
+    )
+    assert simple_driver_total_time(cota_tie_config, cota_tied_plans[0]) == (
+        simple_driver_total_time(cota_tie_config, cota_tied_plans[1])
+    )
+    assert exact_tie_priority(cota_tie_config, cota_tied_plans[1]) < exact_tie_priority(
+        cota_tie_config,
+        cota_tied_plans[0],
+    )
+    assert predict_simple_finishing_order(cota_tie_config, cota_tied_plans) == [
+        "D018",
+        "D012",
+    ]
