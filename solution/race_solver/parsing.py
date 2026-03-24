@@ -32,13 +32,28 @@ def build_driver_plans(
     strategies: Mapping[str, Mapping[str, Any]],
 ) -> tuple[DriverPlan, ...]:
     plans = [
-        build_driver_plan(total_laps=total_laps, strategy=strategy)
-        for strategy in strategies.values()
+        build_driver_plan(
+            total_laps=total_laps,
+            strategy=strategy,
+            grid_position=parse_grid_position(position_key),
+        )
+        for position_key, strategy in strategies.items()
     ]
     return tuple(sorted(plans, key=lambda plan: plan.driver_id))
 
 
-def build_driver_plan(total_laps: int, strategy: Mapping[str, Any]) -> DriverPlan:
+def parse_grid_position(position_key: str) -> int:
+    if position_key.startswith("pos"):
+        return int(position_key[3:])
+    raise ValueError(f"Unsupported strategy position key: {position_key}")
+
+
+def build_driver_plan(
+    total_laps: int,
+    strategy: Mapping[str, Any],
+    *,
+    grid_position: int | None = None,
+) -> DriverPlan:
     """Turn a pit plan into stints.
 
     Pit stops happen at the end of a lap, so a stop listed at lap 18 means the
@@ -87,6 +102,7 @@ def build_driver_plan(total_laps: int, strategy: Mapping[str, Any]) -> DriverPla
 
     return DriverPlan(
         driver_id=str(strategy["driver_id"]),
+        grid_position=999 if grid_position is None else int(grid_position),
         starting_tire=str(strategy["starting_tire"]),
         stop_count=len(raw_stops),
         stints=tuple(stints),

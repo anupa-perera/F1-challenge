@@ -16,6 +16,11 @@ from .runtime_gate import (
     runtime_fallback_context_key,
     runtime_model_for_config,
 )
+from .simple_physics import (
+    driver_total_time as simple_driver_total_time,
+    predict_finishing_order as predict_simple_finishing_order,
+    temperature_multiplier,
+)
 from .scoring import (
     driver_score_breakdown,
     driver_total_time,
@@ -439,4 +444,34 @@ def run_self_checks() -> None:
     ) > rerank_swap_threshold(
         "SOFT->MEDIUM / 1 stop",
         "MEDIUM->SOFT / 1 stop",
+    )
+    assert temperature_multiplier(20) == 0.8
+    assert temperature_multiplier(30) == 1.0
+    assert temperature_multiplier(40) == 1.3
+    simple_identical_plans = (
+        build_driver_plan(
+            total_laps=6,
+            strategy={
+                "driver_id": "D010",
+                "starting_tire": "MEDIUM",
+                "pit_stops": [{"lap": 3, "from_tire": "MEDIUM", "to_tire": "HARD"}],
+            },
+            grid_position=2,
+        ),
+        build_driver_plan(
+            total_laps=6,
+            strategy={
+                "driver_id": "D011",
+                "starting_tire": "MEDIUM",
+                "pit_stops": [{"lap": 3, "from_tire": "MEDIUM", "to_tire": "HARD"}],
+            },
+            grid_position=1,
+        ),
+    )
+    assert predict_simple_finishing_order(config, simple_identical_plans) == [
+        "D011",
+        "D010",
+    ]
+    assert simple_driver_total_time(config, simple_identical_plans[0]) == (
+        simple_driver_total_time(config, simple_identical_plans[1])
     )

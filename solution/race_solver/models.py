@@ -33,6 +33,7 @@ class Stint:
 @dataclass(frozen=True)
 class DriverPlan:
     driver_id: str
+    grid_position: int
     starting_tire: str
     stop_count: int
     stints: tuple[Stint, ...]
